@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.db
+.vscode/
+.idea/
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+data/_upload_tmp.csv
