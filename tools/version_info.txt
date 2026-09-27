@@ -1,7 +1,7 @@
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(1, 0, 0, 0),
-    prodvers=(1, 0, 0, 0),
+    filevers=(2, 0, 0, 0),
+    prodvers=(2, 0, 0, 0),
     mask=0x3F,
     flags=0x0,
     OS=0x40004,
@@ -14,13 +14,13 @@ VSVersionInfo(
       StringTable(
         '040904B0',
         [StringStruct('CompanyName', 'Group 6 - BT-204'),
-         StringStruct('FileDescription', 'IDCheck - Student ID Verification Portal'),
-         StringStruct('FileVersion', '1.0.0.0'),
-         StringStruct('InternalName', 'IDCheck'),
+         StringStruct('FileDescription', 'ScanGate - Student ID Verification Portal'),
+         StringStruct('FileVersion', '2.0.0.0'),
+         StringStruct('InternalName', 'ScanGate'),
          StringStruct('LegalCopyright', 'MIT License'),
-         StringStruct('OriginalFilename', 'IDCheck.exe'),
-         StringStruct('ProductName', 'IDCheck'),
-         StringStruct('ProductVersion', '1.0.0.0')])
+         StringStruct('OriginalFilename', 'ScanGate.exe'),
+         StringStruct('ProductName', 'ScanGate'),
+         StringStruct('ProductVersion', '2.0.0.0')])
     ]),
     VarFileInfo([VarStruct('Translation', [1033, 1200])])
   ]

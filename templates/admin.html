@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CSCQC Portal - IDCheck Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="{{ url_for('static', filename='img/cscqcph.png') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/portal.css') }}">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <img src="{{ url_for('static', filename='img/cscqcph.png') }}" alt="CSCQC logo">
+    <span>ADMIN</span>
+  </div>
+  <div class="school">
+    <h3>COLLEGE OF ST. CATHERINE OF QUEZON CITY</h3>
+    <span class="pill">{{ username }}</span>
+    <a class="link-btn" href="/">SCANNER</a>
+    <a class="link-btn" href="/logout">LOGOUT</a>
+  </div>
+</header>
+
+<main class="center wide">
+
+  <div class="stats-row">
+    <div class="stat-card"><div class="num" id="sStudents">-</div><div class="lbl">Students on file</div></div>
+    <div class="stat-card"><div class="num" id="sToday">-</div><div class="lbl">Scans today</div></div>
+    <div class="stat-card"><div class="num" id="sOntime">-</div><div class="lbl">On time today</div></div>
+    <div class="stat-card"><div class="num" id="sLate">-</div><div class="lbl">Late today</div></div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Load students (CSV)</h2>
+      <p class="mini">Pick the registrar's export. Existing student numbers get updated, new ones get added.</p>
+      <label class="btn-yellow">Choose CSV
+        <input type="file" id="csvFile" accept=".csv" hidden>
+      </label>
+      <p class="mini ok-note" id="importNote"></p>
+    </div>
+
+    <div class="panel">
+      <h2>Time window</h2>
+      <p class="mini">Scans are marked EARLY, ON TIME, or LATE against the class start.</p>
+      <label class="mini">Class starts at</label>
+      <input id="setStart" type="time">
+      <label class="mini">On-time window: minutes before start</label>
+      <input id="setEarly" type="number" min="0">
+      <label class="mini">Late after this many minutes</label>
+      <input id="setLate" type="number" min="0">
+      <button class="btn-green" id="saveSettingsBtn">SAVE</button>
+      <p class="mini ok-note" id="settingsNote"></p>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Admin accounts</h2>
+      <div id="userList"></div>
+      <input id="newUser" type="text" placeholder="username" autocomplete="off">
+      <input id="newPass" type="password" placeholder="password">
+      <button class="btn-green" id="addUserBtn">ADD / RESET</button>
+      <p class="mini ok-note" id="acctNote"></p>
+    </div>
+
+    <div class="panel">
+      <h2>Recent scans</h2>
+      <table>
+        <thead><tr><th>#</th><th>Student No.</th><th>Time</th><th>Status</th><th>Note</th></tr></thead>
+        <tbody id="logBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Students on file</h2>
+    <table>
+      <thead><tr><th>Student No.</th><th>Name</th><th>Course</th><th>Year</th><th>Section</th><th>Gmail</th></tr></thead>
+      <tbody id="studentBody"></tbody>
+    </table>
+  </div>
+
+</main>
+
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+</body>
+</html>

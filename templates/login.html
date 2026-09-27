@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CSCQC Portal - Admin Login</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="{{ url_for('static', filename='img/cscqcph.png') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/portal.css') }}">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <img src="{{ url_for('static', filename='img/cscqcph.png') }}" alt="CSCQC logo">
+    <span>PORTAL</span>
+  </div>
+  <div class="school">
+    <h3>COLLEGE OF ST. CATHERINE OF QUEZON CITY</h3>
+    <a class="link-btn" href="/">SCANNER</a>
+  </div>
+</header>
+
+<main class="center">
+  <div class="card">
+    <img class="card-logo" src="{{ url_for('static', filename='img/cscqcph.png') }}" alt="logo">
+    <h1>Login to IDCheck Admin</h1>
+    <p class="sub">Staff accounts only. Students use the scanner page.</p>
+
+    {% if error %}<div class="err">{{ error }}</div>{% endif %}
+
+    <form method="post">
+      <input name="username" type="text" placeholder="Username" autocomplete="off" autofocus>
+      <div class="pass-row">
+        <input name="password" id="pass" type="password" placeholder="Password">
+        <button type="button" class="eye" onclick="togglePass()" title="show/hide">&#128065;</button>
+      </div>
+      <button class="btn-green" type="submit">LOGIN</button>
+    </form>
+  </div>
+</main>
+
+<script>
+function togglePass() {
+  const p = document.getElementById("pass");
+  p.type = p.type === "password" ? "text" : "password";
+}
+</script>
+</body>
+</html>

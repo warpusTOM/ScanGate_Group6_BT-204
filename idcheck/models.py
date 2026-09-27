@@ -42,15 +42,15 @@ class Student:
 
 @dataclass
 class ScanRecord:
-    """One verification event — who was scanned, when, and whether an
-    email notification went out."""
+    """One verification event: who scanned, when, and whether they were
+    EARLY, ON TIME, or LATE against the class start time."""
 
     student_id: str
     timestamp: datetime
     note: str = ""
-    emailed: bool = False
+    status: str = ""
     id: int | None = None
 
     def __str__(self) -> str:
-        flag = " emailed" if self.emailed else ""
-        return f"#{self.id or '-'} {self.timestamp:%Y-%m-%d %H:%M:%S} {self.student_id}{flag}"
+        return (f"#{self.id or '-'} {self.timestamp:%Y-%m-%d %H:%M:%S} "
+                f"{self.student_id} {self.status}")

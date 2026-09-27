@@ -1,15 +1,31 @@
-# IDCheck
+# ScanGate
 
-Student ID verification portal for CSCQC. Scan or type a student number,
-the system checks the local database, shows the student's info, logs the
-scan, and can email a notice to the student's Gmail.
+Student ID scanning and verification portal for CSCQC. Scan or type a
+student number and the system checks the local database, shows the
+student's full name, ID number, and section, marks the scan EARLY,
+ON TIME, or LATE against the class start time, and logs everything.
 
-Group 6 (BT-204), OOP finals project.
+Group 6 (BT-204), OOP finals project. Runs fully offline on one laptop.
+No internet needed for anything.
+
+## Who sees what
+
+- **Students** get only the verification page (`/`). Type or scan a
+  number, get verified / not registered plus the time note.
+  No student list, no logs, no import button.
+- **Admins** log in at `/login` and get the dashboard (`/admin`):
+  CSV import, student list, recent scans, late/on-time counts,
+  time window settings, and account management.
+
+First run has no accounts, so `/login` redirects to a one-time setup
+page. Create the first admin there (ours is `molino`). Add or reset
+more accounts later from the admin page. Passwords are stored as
+PBKDF2 hashes in the local database, never in the code.
 
 ## How it looks
 
 Same look as the school portal (cscqcph.com): campus photo background,
-white card in the middle, green scan button, recent scans table below.
+white card in the middle, green scan button.
 
 ## Run it
 
@@ -23,10 +39,26 @@ python main.py --demo     # load the sample students first
 Or grab the exe from Releases. Double-click, wait a few seconds, the
 portal opens. No Python needed.
 
+## The time notes
+
+Every scan is compared to the class start time (set on the admin page,
+default 08:00):
+
+- **EARLY** - more than 15 minutes before start
+- **ON TIME** - inside the window (15 min before to 10 min after)
+- **LATE** - more than 10 minutes past start
+
+The window is adjustable on `/admin` under "Time window".
+
 ## Loading your real student list
 
-Click **Choose CSV** on the page (or `:import file.csv` in the terminal
-version). The importer is not strict about headers:
+Admins click **Choose CSV** on the dashboard (or `:import file.csv` in
+the terminal version). The school portal's credentials export works
+as-is (`section,student_no,surname,first_name,access_key`): names are
+joined, blank student numbers fall back to the access key, and course +
+year are read out of the section.
+
+Other header spellings also work:
 
 | field | accepted headers |
 |---|---|
@@ -41,26 +73,6 @@ Only the student number and name are required. Importing the same file
 again updates records instead of duplicating them.
 Example file: `data/students_sample.csv`.
 
-## Email notices (optional)
-
-Off by default so the system runs fully offline. To turn on:
-
-1. Make a Gmail account for the project and enable 2-Step Verification.
-2. Google Account > Security > App passwords > create one.
-3. Put the address and app password in `idcheck/constants.py` and set
-   `EMAIL_ENABLED = True`.
-
-If the email fails (no internet, wrong password), the scan is still
-saved and just marked "not sent". Scanning never breaks.
-
-## Checking the gmails (optional, online)
-
-`:checkemails` in the terminal version validates every stored gmail
-through EVA (a free API from the public-apis list, no key needed) and
-flags bad syntax, disposable addresses, and undeliverable ones. Useful
-after importing a big CSV. Needs internet; the rest of the system does
-not.
-
 ## Tests
 
 ```
@@ -72,11 +84,14 @@ python -m unittest discover -s tests -t . -v
 ```
 pip install pyinstaller pillow
 python tools/make_icon.py   # only if the icon needs regenerating
-python tools/build.py       # -> dist/IDCheck.exe and dist/IDCheck/
+python tools/build.py       # -> dist/ScanGate.exe and dist/ScanGate/
 ```
 
-Two builds come out. `IDCheck.exe` is one file, easiest to copy around.
-`dist/IDCheck/` is the folder version, less likely to get flagged by
+Run the exe from `dist/` only. The `build/` folder is PyInstaller's
+scratch space and the exe there won't start.
+
+Two builds come out. `ScanGate.exe` is one file, easiest to copy around.
+`dist/ScanGate/` is the folder version, less likely to get flagged by
 antivirus (PyInstaller's onefile bootloader is a known false positive).
 Neither is code-signed, so SmartScreen may still ask once:
 **More info > Run anyway**.
@@ -84,18 +99,17 @@ Neither is code-signed, so SmartScreen may still ask once:
 ## Layout
 
 ```
-IDCheck/
 ├── main.py               # entry point
 ├── idcheck/
-│   ├── constants.py      # db path + gmail settings
+│   ├── constants.py      # db path + time window defaults
 │   ├── models.py         # Student, ScanRecord
 │   ├── database.py       # sqlite, all SQL lives here
+│   ├── auth.py           # admin accounts (PBKDF2) + login decorator
 │   ├── importer.py       # CSV import with header aliases
-│   ├── notifier.py       # Notifier ABC -> GmailNotifier / NullNotifier
-│   ├── system.py         # IDCheckSystem facade
-│   ├── web.py            # flask routes (/api/scan, /api/import, ...)
+│   ├── system.py         # IDCheckSystem facade, time classification
+│   ├── web.py            # flask routes: public scan + admin dashboard
 │   └── cli.py            # terminal scanner
-├── templates/index.html  # portal page
+├── templates/            # index (public), login, setup, admin
 ├── static/               # css, js, school images
 ├── data/students_sample.csv
 ├── tests/

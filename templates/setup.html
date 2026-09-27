@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>CSCQC Portal - ScanGate</title>
+<title>CSCQC Portal - First Setup</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="{{ url_for('static', filename='img/cscqcph.png') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/portal.css') }}">
@@ -16,27 +16,26 @@
   </div>
   <div class="school">
     <h3>COLLEGE OF ST. CATHERINE OF QUEZON CITY</h3>
-    <a class="link-btn" href="/login">ADMIN</a>
   </div>
 </header>
 
 <main class="center">
-
   <div class="card">
     <img class="card-logo" src="{{ url_for('static', filename='img/cscqcph.png') }}" alt="logo">
-    <h1>Student ID Verification</h1>
-    <p class="sub">Scan the ID barcode or type the student number, then Enter.</p>
+    <h1>First Setup</h1>
+    <p class="sub">No admin accounts yet. Create the first one here.
+       You can add more later from the admin page.</p>
 
-    <input id="scanInput" type="text" placeholder="Student number (e.g. 2026-0001)" autocomplete="off" autofocus>
-    <input id="noteInput" type="text" placeholder="Note (optional, e.g. Gate A)">
-    <button class="btn-green" id="scanBtn">SCAN / VERIFY</button>
+    {% if error %}<div class="err">{{ error }}</div>{% endif %}
 
-    <div id="result" class="result hidden"></div>
+    <form method="post">
+      <input name="username" type="text" placeholder="Admin username" autocomplete="off" autofocus>
+      <input name="password" type="password" placeholder="Password">
+      <input name="password2" type="password" placeholder="Repeat password">
+      <button class="btn-green" type="submit">CREATE ADMIN</button>
+    </form>
   </div>
-
-  <p class="foot">ScanGate &middot; Group 6 (BT-204) &middot; runs offline, data stays on this machine</p>
 </main>
 
-<script src="{{ url_for('static', filename='js/portal.js') }}"></script>
 </body>
 </html>

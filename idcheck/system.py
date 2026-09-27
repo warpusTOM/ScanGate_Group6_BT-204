@@ -1,27 +1,19 @@
-"""IDCheckSystem: one facade over the database, importer, and notifier."""
+"""IDCheckSystem: one facade over the database and the importer."""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, time, timedelta
 from pathlib import Path
 
-from .constants import (DB_PATH, EMAIL_ENABLED, EMAIL_SUBJECT,
-                        GMAIL_ADDRESS, GMAIL_APP_PASSWORD)
+from .constants import (DB_PATH, DEFAULT_START_TIME, EARLY_BEFORE_MINUTES,
+                        LATE_AFTER_MINUTES)
 from .database import Database
 from .importer import load_students_csv
 from .models import ScanRecord, Student
-from .notifier import GmailNotifier, Notifier, NullNotifier
 
 
 class IDCheckSystem:
-    def __init__(self, db_path: str | Path = DB_PATH,
-                 notifier: Notifier | None = None):
+    def __init__(self, db_path: str | Path = DB_PATH):
         self.db = Database(db_path)
-        if notifier is not None:
-            self.notifier = notifier
-        elif EMAIL_ENABLED and GMAIL_ADDRESS and GMAIL_APP_PASSWORD:
-            self.notifier = GmailNotifier(GMAIL_ADDRESS, GMAIL_APP_PASSWORD)
-        else:
-            self.notifier = NullNotifier()
 
     # students ---------------------------------------------------------
     def import_students(self, csv_path: str | Path) -> tuple[int, int]:
@@ -38,65 +30,64 @@ class IDCheckSystem:
         return self.db.get_student(student_id.strip())
 
     # scanning ---------------------------------------------------------
-    def scan(self, student_id: str, note: str = "") -> tuple[Student, ScanRecord]:
+    def scan(self, student_id: str, note: str = "",
+             when: datetime | None = None) -> tuple[Student, ScanRecord]:
         student = self.lookup(student_id)
-        rec = ScanRecord(student_id=student.student_id,
-                         timestamp=datetime.now(), note=note.strip())
+        ts = when or datetime.now()
+        rec = ScanRecord(student_id=student.student_id, timestamp=ts,
+                         note=note.strip(), status=self._classify(ts))
         self.db.log_scan(rec)
-        if self._notify(student, rec):
-            self.db.mark_emailed(rec.id)
-            rec.emailed = True
         return student, rec
 
-    def _notify(self, student: Student, rec: ScanRecord) -> bool:
-        # a failed email must never break a scan, so swallow errors here
-        if not student.can_receive_email:
-            return False
-        body = (
-            f"Hi {student.full_name},\n\n"
-            f"Your student ID ({student.student_id}) was scanned and verified "
-            f"on {rec.timestamp:%B %d, %Y} at {rec.timestamp:%I:%M %p}.\n"
-        )
-        if rec.note:
-            body += f"Note: {rec.note}\n"
-        body += ("\nIf this was not you, please tell your instructor "
-                 "or the registrar.\n\n- IDCheck")
+    # ---- time notes ----------------------------------------------------
+    def time_window(self) -> tuple[time, int, int]:
+        """(class start, early-before minutes, late-after minutes)."""
+        raw = self.db.get_setting("start_time", DEFAULT_START_TIME)
         try:
-            return self.notifier.send(student, EMAIL_SUBJECT, body)
-        except Exception:
-            return False
+            start = datetime.strptime(raw, "%H:%M").time()
+        except ValueError:
+            start = datetime.strptime(DEFAULT_START_TIME, "%H:%M").time()
+        try:
+            early = int(self.db.get_setting("early_before",
+                                            str(EARLY_BEFORE_MINUTES)))
+        except ValueError:
+            early = EARLY_BEFORE_MINUTES
+        try:
+            late = int(self.db.get_setting("late_after",
+                                           str(LATE_AFTER_MINUTES)))
+        except ValueError:
+            late = LATE_AFTER_MINUTES
+        return start, early, late
+
+    def set_time_window(self, start_time: str, early_before: int,
+                        late_after: int) -> None:
+        datetime.strptime(start_time, "%H:%M")  # raises on bad input
+        if early_before < 0 or late_after < 0:
+            raise ValueError("minutes cannot be negative")
+        self.db.set_setting("start_time", start_time)
+        self.db.set_setting("early_before", str(early_before))
+        self.db.set_setting("late_after", str(late_after))
+
+    def _classify(self, ts: datetime) -> str:
+        start, early_before, late_after = self.time_window()
+        start_dt = datetime.combine(ts.date(), start)
+        if ts < start_dt - timedelta(minutes=early_before):
+            return "EARLY"
+        if ts <= start_dt + timedelta(minutes=late_after):
+            return "ON TIME"
+        return "LATE"
 
     # info ---------------------------------------------------------------
     def recent_scans(self, limit: int = 50) -> list[ScanRecord]:
         return self.db.recent_scans(limit)
-
-    def check_student_emails(self) -> list[dict]:
-        """Online-only: validate every stored gmail through EVA.
-
-        Returns one row per student that has a gmail:
-        {"student_id", "full_name", "gmail", "result"} where result is
-        None when there is no internet or the API is down.
-        """
-        from .emailcheck import check_email
-
-        report = []
-        for s in self.db.all_students():
-            if not s.gmail:
-                continue
-            report.append({
-                "student_id": s.student_id,
-                "full_name": s.full_name,
-                "gmail": s.gmail,
-                "result": check_email(s.gmail),
-            })
-        return report
 
     def stats(self) -> dict:
         return {
             "students": self.db.count_students(),
             "scans_total": self.db.count_scans(),
             "scans_today": self.db.count_scans_today(),
-            "email_enabled": not isinstance(self.notifier, NullNotifier),
+            "late_today": self.db.count_scans_today_with_status("LATE"),
+            "ontime_today": self.db.count_scans_today_with_status("ON TIME"),
         }
 
     def close(self) -> None:

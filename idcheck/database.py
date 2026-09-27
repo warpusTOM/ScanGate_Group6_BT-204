@@ -26,6 +26,10 @@ CREATE TABLE IF NOT EXISTS scan_logs (
     emailed    INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_scan_logs_sid ON scan_logs(student_id);
+CREATE TABLE IF NOT EXISTS settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
 """
 
 
@@ -44,6 +48,29 @@ class Database:
         self._conn.row_factory = sqlite3.Row
         with self._lock:
             self._conn.executescript(SCHEMA)
+            self._ensure_columns()
+            self._conn.commit()
+
+    def _ensure_columns(self) -> None:
+        """Add columns that older database files don't have yet."""
+        cols = {r[1] for r in self._conn.execute("PRAGMA table_info(scan_logs)")}
+        if "status" not in cols:
+            self._conn.execute(
+                "ALTER TABLE scan_logs ADD COLUMN status TEXT NOT NULL DEFAULT ''")
+
+    # ---------------- settings ----------------
+    def get_setting(self, key: str, default: str = "") -> str:
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT value FROM settings WHERE key = ?", (key,)).fetchone()
+        return row[0] if row else default
+
+    def set_setting(self, key: str, value: str) -> None:
+        with self._lock:
+            self._conn.execute(
+                "INSERT INTO settings (key, value) VALUES (?, ?) "
+                "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                (key, value))
             self._conn.commit()
 
     def __enter__(self) -> "Database":
@@ -108,20 +135,14 @@ class Database:
     def log_scan(self, rec: ScanRecord) -> int:
         with self._lock:
             cur = self._conn.execute(
-                "INSERT INTO scan_logs (student_id, timestamp, note, emailed) "
+                "INSERT INTO scan_logs (student_id, timestamp, note, status) "
                 "VALUES (?, ?, ?, ?)",
                 (rec.student_id, rec.timestamp.isoformat(), rec.note,
-                 int(rec.emailed)),
+                 rec.status),
             )
             self._conn.commit()
             rec.id = cur.lastrowid
             return rec.id
-
-    def mark_emailed(self, rec_id: int) -> None:
-        with self._lock:
-            self._conn.execute(
-                "UPDATE scan_logs SET emailed = 1 WHERE id = ?", (rec_id,))
-            self._conn.commit()
 
     def recent_scans(self, limit: int = 50) -> list[ScanRecord]:
         with self._lock:
@@ -143,6 +164,14 @@ class Database:
                 (date.today().isoformat(),),
             ).fetchone()[0]
 
+    def count_scans_today_with_status(self, status: str) -> int:
+        with self._lock:
+            return self._conn.execute(
+                "SELECT COUNT(*) FROM scan_logs "
+                "WHERE substr(timestamp, 1, 10) = ? AND status = ?",
+                (date.today().isoformat(), status),
+            ).fetchone()[0]
+
     def count_scans_for(self, student_id: str) -> int:
         with self._lock:
             return self._conn.execute(
@@ -155,5 +184,5 @@ class Database:
         return ScanRecord(
             student_id=row["student_id"],
             timestamp=datetime.fromisoformat(row["timestamp"]),
-            note=row["note"], emailed=bool(row["emailed"]), id=row["id"],
+            note=row["note"], status=row["status"], id=row["id"],
         )
