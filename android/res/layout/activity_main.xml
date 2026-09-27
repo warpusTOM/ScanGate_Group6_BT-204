@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    android:background="#1a2a33">
+
+    <TextView
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="ScanGate" android:textSize="28sp" android:textStyle="bold"
+        android:textColor="#ffffff" />
+    <TextView
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="CSCQC Student ID Verification"
+        android:textSize="13sp" android:textColor="#B0BEC5"
+        android:layout_marginBottom="14dp" />
+
+    <EditText
+        android:id="@+id/inputId"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:hint="Student number (e.g. 20253152)"
+        android:textColorHint="#6c757d"
+        android:textColor="#212529"
+        android:inputType="text" android:singleLine="true"
+        android:imeOptions="actionDone"
+        android:padding="12dp"
+        android:background="@drawable/bg_input" />
+    <Button
+        android:id="@+id/btnScan"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="SCAN / VERIFY"
+        android:textColor="#ffffff"
+        android:backgroundTint="#198754" />
+
+    <LinearLayout
+        android:id="@+id/resultCard"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="16dp"
+        android:padding="16dp"
+        android:background="@drawable/card"
+        android:visibility="gone">
+
+        <TextView android:id="@+id/tvName"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:textSize="22sp" android:textStyle="bold"
+            android:textColor="#212529" />
+        <TextView android:id="@+id/tvId"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:textSize="14sp" android:textColor="#495057"
+            android:layout_marginTop="4dp" />
+        <TextView android:id="@+id/tvSection"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:textSize="14sp" android:textColor="#495057" />
+        <TextView android:id="@+id/tvStatus"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:padding="10dp" android:gravity="center"
+            android:textSize="18sp" android:textStyle="bold" />
+    </LinearLayout>
+
+    <TextView android:id="@+id/tvStats"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:textSize="12sp" android:textColor="#B0BEC5" />
+    <TextView
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Recent scans" android:textStyle="bold"
+        android:textColor="#ffffff"
+        android:layout_marginTop="10dp" />
+    <ListView android:id="@+id/lvLogs"
+        android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="6dp" />
+</LinearLayout>
