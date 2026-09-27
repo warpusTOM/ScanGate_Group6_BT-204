@@ -70,6 +70,27 @@ class IDCheckSystem:
     def recent_scans(self, limit: int = 50) -> list[ScanRecord]:
         return self.db.recent_scans(limit)
 
+    def check_student_emails(self) -> list[dict]:
+        """Online-only: validate every stored gmail through EVA.
+
+        Returns one row per student that has a gmail:
+        {"student_id", "full_name", "gmail", "result"} where result is
+        None when there is no internet or the API is down.
+        """
+        from .emailcheck import check_email
+
+        report = []
+        for s in self.db.all_students():
+            if not s.gmail:
+                continue
+            report.append({
+                "student_id": s.student_id,
+                "full_name": s.full_name,
+                "gmail": s.gmail,
+                "result": check_email(s.gmail),
+            })
+        return report
+
     def stats(self) -> dict:
         return {
             "students": self.db.count_students(),

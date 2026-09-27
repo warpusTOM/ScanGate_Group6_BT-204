@@ -142,5 +142,105 @@ class TestWebApi(unittest.TestCase):
         self.assertEqual(stats["scans_today"], 1)
 
 
+class TestEmailCheck(unittest.TestCase):
+    """EVA integration is mocked — no network in tests."""
+
+    def test_parses_eva_response(self):
+        import json
+        import urllib.request
+
+        import idcheck.emailcheck as ec
+
+        class FakeResp:
+            def read(self):
+                return json.dumps({"status": "success", "data": {
+                    "deliverable": True, "disposable": False,
+                    "valid_syntax": True}}).encode()
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+        orig = urllib.request.urlopen
+        urllib.request.urlopen = lambda url, timeout=4: FakeResp()
+        try:
+            out = ec.check_email("someone@gmail.com")
+        finally:
+            urllib.request.urlopen = orig
+        self.assertEqual(out["deliverable"], True)
+        self.assertEqual(out["disposable"], False)
+
+    def test_offline_returns_none(self):
+        import urllib.request
+
+        import idcheck.emailcheck as ec
+
+        orig = urllib.request.urlopen
+
+        def boom(url, timeout=4):
+            raise OSError("no network")
+
+        urllib.request.urlopen = boom
+        try:
+            self.assertIsNone(ec.check_email("someone@gmail.com"))
+        finally:
+            urllib.request.urlopen = orig
+
+
+class TestThreadedServer(unittest.TestCase):
+    """Regression: flask serves on worker threads, sqlite used to blow up
+    there (ProgrammingError: objects created in a thread...)."""
+
+    PORT = 5987
+
+    def test_scan_over_real_http(self):
+        import json
+        import threading
+        import time
+        import urllib.request
+
+        from idcheck.web import create_app
+
+        tmp = tempfile.TemporaryDirectory()
+        csv_path = Path(tmp.name) / "students.csv"
+        csv_path.write_text(SAMPLE_CSV, encoding="utf-8")
+        system = IDCheckSystem(Path(tmp.name) / "srv.db")
+        system.import_students(csv_path)
+
+        app = create_app(system)
+        threading.Thread(
+            target=lambda: app.run(port=self.PORT, threaded=True,
+                                   use_reloader=False),
+            daemon=True,
+        ).start()
+
+        base = f"http://127.0.0.1:{self.PORT}"
+        up = False
+        for _ in range(60):
+            try:
+                urllib.request.urlopen(base + "/api/stats", timeout=1)
+                up = True
+                break
+            except Exception:
+                time.sleep(0.1)
+        self.assertTrue(up, "server never came up")
+
+        req = urllib.request.Request(
+            base + "/api/scan",
+            data=json.dumps({"id": "2026-0001"}).encode(),
+            headers={"Content-Type": "application/json"})
+        data = json.loads(urllib.request.urlopen(req, timeout=5).read())
+        self.assertTrue(data["found"])
+        self.assertEqual(data["student"]["full_name"], "Juan Dela Cruz")
+
+        page = urllib.request.urlopen(base + "/", timeout=5).read().decode()
+        self.assertIn("Student ID Verification", page)
+
+        system.close()
+        tmp.cleanup()
+
+
 if __name__ == "__main__":
     unittest.main()

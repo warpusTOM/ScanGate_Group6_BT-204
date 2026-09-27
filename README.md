@@ -53,6 +53,14 @@ Off by default so the system runs fully offline. To turn on:
 If the email fails (no internet, wrong password), the scan is still
 saved and just marked "not sent". Scanning never breaks.
 
+## Checking the gmails (optional, online)
+
+`:checkemails` in the terminal version validates every stored gmail
+through EVA (a free API from the public-apis list, no key needed) and
+flags bad syntax, disposable addresses, and undeliverable ones. Useful
+after importing a big CSV. Needs internet; the rest of the system does
+not.
+
 ## Tests
 
 ```

@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from .system import IDCheckSystem
 
-HELP = ("commands:  :import <csv>   :list   :logs [n]   :stats   :quit\n"
+HELP = ("commands:  :import <csv>   :list   :logs [n]   :stats   "
+        ":checkemails   :quit\n"
         "anything else is treated as a student number to scan")
 
 
@@ -49,6 +50,21 @@ def _command(system: IDCheckSystem, raw: str) -> str | None:
         print(f"  students: {st['students']}  scans today: {st['scans_today']}  "
               f"total scans: {st['scans_total']}  email: "
               f"{'on' if st['email_enabled'] else 'off'}")
+    elif cmd == ":checkemails":
+        print("  checking gmails online (EVA)...")
+        for row in system.check_student_emails():
+            r = row["result"]
+            if r is None:
+                verdict = "offline / api down"
+            elif not r["valid_syntax"]:
+                verdict = "bad syntax"
+            elif r["disposable"]:
+                verdict = "disposable address"
+            elif r["deliverable"]:
+                verdict = "deliverable"
+            else:
+                verdict = "NOT deliverable"
+            print(f"  {row['student_id']:<12} {row['gmail']:<32} {verdict}")
     else:
         print(f"unknown command {cmd} (:help)")
     return None
