@@ -1,0 +1,130 @@
+/* IDCheck portal page. Layout follows the school portal (cscqcph.com):
+   campus photo background, dark overlay, white card in the middle. */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  background:
+    linear-gradient(rgba(0, 0, 0, .55), rgba(0, 0, 0, .62)),
+    url("../img/stcat.png") center / cover no-repeat fixed;
+  color: #212529;
+}
+
+/* ---- top bar ---- */
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 30px;
+  color: #fff;
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand img { height: 46px; }
+.brand span { font-weight: 700; letter-spacing: 3px; font-size: 1.1rem; }
+.school { display: flex; align-items: center; gap: 14px; }
+.school h3 { font-size: 1rem; font-weight: 600; }
+.pill {
+  font-size: .78rem;
+  background: rgba(255, 255, 255, .14);
+  border: 1px solid rgba(255, 255, 255, .35);
+  border-radius: 999px;
+  padding: 4px 12px;
+  white-space: nowrap;
+}
+
+/* ---- center column ---- */
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4vh 16px 48px;
+}
+
+/* the card, same feel as the portal's login modal */
+.card {
+  background: #fff;
+  border-radius: .5rem;
+  box-shadow: 0 12px 44px rgba(0, 0, 0, .40);
+  padding: 28px;
+  width: 100%;
+  max-width: 440px;
+  text-align: center;
+}
+.card-logo { max-width: 88px; display: block; margin: 0 auto 8px; }
+.card h1 { font-size: 1.3rem; margin-bottom: 2px; }
+.sub { color: #6c757d; font-size: .85rem; margin-bottom: 16px; }
+
+input {
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  font-size: 1rem;
+  border: 1px solid #ced4da;
+  border-radius: .375rem;
+}
+input:focus { outline: 2px solid #198754; border-color: #198754; }
+
+.btn-green {
+  width: 100%;
+  background: #198754;
+  color: #fff;
+  border: 0;
+  padding: 11px;
+  font-size: 1rem;
+  border-radius: .375rem;
+  cursor: pointer;
+}
+.btn-green:hover { background: #157347; }
+
+/* scan result, green for verified, red for unknown */
+.result {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: .375rem;
+  text-align: left;
+  font-size: .92rem;
+}
+.result.ok { background: #d1e7dd; border: 1px solid #a3cfbb; }
+.result.bad { background: #f8d7da; border: 1px solid #f1aeb5; }
+.result .name { font-size: 1.15rem; font-weight: 700; margin-bottom: 6px; }
+.result .row { display: flex; justify-content: space-between; gap: 12px; padding: 2px 0; }
+.result .row span { color: #495057; }
+
+/* ---- recent scans ---- */
+.logs {
+  width: 100%;
+  max-width: 780px;
+  margin-top: 26px;
+  background: rgba(255, 255, 255, .95);
+  border-radius: .5rem;
+  box-shadow: 0 12px 44px rgba(0, 0, 0, .30);
+  padding: 18px 22px;
+}
+.logs-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.logs-head h2 { font-size: 1.05rem; }
+.logs-actions { display: flex; align-items: center; gap: 10px; }
+.file-note { font-size: .78rem; color: #6c757d; }
+.btn-yellow {
+  background: #ffc107;
+  color: #212529;
+  border: 0;
+  padding: 7px 14px;
+  font-size: .85rem;
+  border-radius: .375rem;
+  cursor: pointer;
+  display: inline-block;
+}
+.btn-yellow:hover { background: #e0a800; }
+
+table { width: 100%; border-collapse: collapse; font-size: .87rem; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid #dee2e6; }
+th { background: #f1f3f5; }
+
+.foot { margin-top: 18px; color: rgba(255, 255, 255, .75); font-size: .78rem; }
+.hidden { display: none; }
+
+@media (max-width: 640px) {
+  .school h3 { display: none; }
+}
