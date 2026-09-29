@@ -8,6 +8,7 @@ venv/
 
 # PyInstaller
 build/
+build_onedir/
 dist/
 *.spec
 

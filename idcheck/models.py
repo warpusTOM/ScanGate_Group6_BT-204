@@ -4,6 +4,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
+from .timefmt import stamp_12h
+
 
 @dataclass
 class Student:
@@ -52,5 +54,5 @@ class ScanRecord:
     id: int | None = None
 
     def __str__(self) -> str:
-        return (f"#{self.id or '-'} {self.timestamp:%Y-%m-%d %H:%M:%S} "
+        return (f"#{self.id or '-'} {stamp_12h(self.timestamp)} "
                 f"{self.student_id} {self.status}")

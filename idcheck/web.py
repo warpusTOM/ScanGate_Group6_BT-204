@@ -8,6 +8,7 @@ from flask import (Flask, jsonify, redirect, render_template, request,
 
 from .auth import UserStore, admin_required
 from .system import IDCheckSystem
+from .timefmt import clock_12h, stamp_12h
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -46,7 +47,7 @@ def create_app(system: IDCheckSystem, users: UserStore,
             },
             "scan": {
                 "id": rec.id,
-                "time": f"{rec.timestamp:%Y-%m-%d %H:%M:%S}",
+                "time": stamp_12h(rec.timestamp),
                 "status": rec.status,
                 "note": rec.note,
             },
@@ -131,7 +132,7 @@ def create_app(system: IDCheckSystem, users: UserStore,
             n = 50
         return jsonify([
             {"id": r.id, "student_id": r.student_id,
-             "time": f"{r.timestamp:%Y-%m-%d %H:%M:%S}",
+             "time": stamp_12h(r.timestamp),
              "note": r.note, "status": r.status}
             for r in system.recent_scans(n)
         ])
@@ -140,7 +141,10 @@ def create_app(system: IDCheckSystem, users: UserStore,
     @admin_required
     def api_get_settings():
         start, early, late = system.time_window()
+        # start_time stays HH:MM because it feeds <input type="time">;
+        # start_time_12h is the human-readable echo next to it
         return jsonify({"start_time": f"{start:%H:%M}",
+                        "start_time_12h": clock_12h(start, seconds=False),
                         "early_before": early, "late_after": late})
 
     @app.post("/api/settings")
@@ -154,7 +158,9 @@ def create_app(system: IDCheckSystem, users: UserStore,
                 int(data.get("late_after", 0)))
         except (ValueError, TypeError):
             return jsonify({"error": "bad values (time HH:MM, minutes >= 0)"}), 400
-        return jsonify({"ok": True})
+        start, _, _ = system.time_window()
+        return jsonify({"ok": True,
+                        "start_time_12h": clock_12h(start, seconds=False)})
 
     @app.get("/api/stats")
     @admin_required

@@ -13,12 +13,27 @@ async function loadStats() {
   document.getElementById("sLate").textContent = s.late_today;
 }
 
+// the <input type="time"> control is 24-hour by nature, so echo the
+// 12-hour reading next to it: "08:00" -> "8:00 AM"
+function hhmmTo12h(value) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(value || "");
+  if (!m) return "-";
+  let h = Number(m[1]) % 12;
+  if (h === 0) h = 12;
+  return h + ":" + m[2] + " " + (Number(m[1]) < 12 ? "AM" : "PM");
+}
+
 async function loadSettings() {
   const s = await (await fetch("/api/settings")).json();
   document.getElementById("setStart").value = s.start_time;
   document.getElementById("setEarly").value = s.early_before;
   document.getElementById("setLate").value = s.late_after;
+  document.getElementById("startEcho").textContent = s.start_time_12h;
 }
+
+document.getElementById("setStart").addEventListener("input", (e) => {
+  document.getElementById("startEcho").textContent = hhmmTo12h(e.target.value);
+});
 
 document.getElementById("saveSettingsBtn").addEventListener("click", async () => {
   const res = await fetch("/api/settings", {
@@ -33,6 +48,9 @@ document.getElementById("saveSettingsBtn").addEventListener("click", async () =>
   const data = await res.json();
   document.getElementById("settingsNote").textContent =
     data.error || "saved.";
+  if (data.start_time_12h) {
+    document.getElementById("startEcho").textContent = data.start_time_12h;
+  }
 });
 
 async function loadLogs() {

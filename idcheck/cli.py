@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from .system import IDCheckSystem
+from .timefmt import stamp_12h
 
 HELP = ("commands:  :import <csv>   :list   :logs [n]   :stats   :quit\n"
         "anything else is treated as a student number to scan")
@@ -12,7 +13,7 @@ def _print_card(student, rec) -> None:
     print(f"  | Name    : {student.full_name}")
     print(f"  | ID      : {student.student_id}")
     print(f"  | Section : {student.section or '-'}")
-    print(f"  | Time    : {rec.timestamp:%Y-%m-%d %H:%M:%S}")
+    print(f"  | Time    : {stamp_12h(rec.timestamp)}")
     print(f"  | Status  : {rec.status}")
     print("  +" + "-" * 52)
 

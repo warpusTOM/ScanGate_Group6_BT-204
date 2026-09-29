@@ -1,13 +1,14 @@
 import io
 import tempfile
 import unittest
-from datetime import datetime
+from datetime import datetime, time
 from pathlib import Path
 
 from idcheck.auth import UserStore
 from idcheck.importer import load_students_csv
 from idcheck.models import Student
 from idcheck.system import IDCheckSystem
+from idcheck.timefmt import clock_12h, stamp_12h
 
 # header names here are the messy kind you get from real exports,
 # the importer has to survive them
@@ -219,6 +220,57 @@ class TestTimeWindow(unittest.TestCase):
             self.system.set_time_window("25:99", 10, 10)
 
 
+class TestClockFormat(unittest.TestCase):
+    """Displayed times are 12-hour with AM/PM; the database stays 24-hour."""
+
+    def test_afternoon(self):
+        self.assertEqual(clock_12h(datetime(2026, 9, 27, 20, 27, 28)),
+                         "8:27:28 PM")
+
+    def test_morning_drops_the_leading_zero(self):
+        self.assertEqual(clock_12h(datetime(2026, 9, 27, 8, 5, 3)),
+                         "8:05:03 AM")
+
+    def test_noon_and_midnight(self):
+        self.assertEqual(clock_12h(datetime(2026, 9, 27, 12, 0, 0)),
+                         "12:00:00 PM")
+        self.assertEqual(clock_12h(datetime(2026, 9, 27, 0, 30, 0)),
+                         "12:30:00 AM")
+
+    def test_ten_and_eleven_keep_both_digits(self):
+        self.assertEqual(clock_12h(datetime(2026, 9, 27, 10, 15, 0)),
+                         "10:15:00 AM")
+        self.assertEqual(clock_12h(datetime(2026, 9, 27, 23, 59, 59)),
+                         "11:59:59 PM")
+
+    def test_short_form_for_class_start(self):
+        self.assertEqual(clock_12h(time(8, 0), seconds=False), "8:00 AM")
+        self.assertEqual(clock_12h(time(13, 30), seconds=False), "1:30 PM")
+
+    def test_stamp_keeps_the_date(self):
+        self.assertEqual(stamp_12h(datetime(2026, 9, 27, 20, 27, 28)),
+                         "2026-09-27 8:27:28 PM")
+
+    def test_record_str_is_12_hour(self):
+        from idcheck.models import ScanRecord
+        rec = ScanRecord("2026-0001", datetime(2026, 9, 27, 20, 27, 28),
+                         status="LATE", id=1)
+        self.assertIn("8:27:28 PM", str(rec))
+        self.assertNotIn("20:27", str(rec))
+
+    def test_storage_column_stays_24_hour(self):
+        """12-hour in the db would break date slicing and sorting."""
+        tmp = tempfile.TemporaryDirectory()
+        system = IDCheckSystem(Path(tmp.name) / "t.db")
+        system.db.upsert_student(Student("2026-0001", "Juan"))
+        system.scan("2026-0001", when=datetime(2026, 9, 27, 20, 27))
+        raw = system.db._conn.execute(
+            "SELECT timestamp FROM scan_logs").fetchone()[0]
+        self.assertTrue(raw.startswith("2026-09-27T20:27"), raw)
+        system.close()
+        tmp.cleanup()
+
+
 class TestWebApi(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -257,6 +309,28 @@ class TestWebApi(unittest.TestCase):
     def test_scan_empty_id_rejected(self):
         r = self.client.post("/api/scan", json={"id": "   "})
         self.assertEqual(r.status_code, 400)
+
+    # ---- 12-hour clock ----
+    def test_scan_time_is_12_hour(self):
+        r = self.client.post("/api/scan", json={"id": "2026-0001"})
+        self.assertRegex(r.get_json()["scan"]["time"],
+                         r"^\d{4}-\d{2}-\d{2} \d{1,2}:\d{2}:\d{2} (AM|PM)$")
+
+    def test_log_time_is_12_hour(self):
+        self.client.post("/api/scan", json={"id": "2026-0001"})
+        self.login()
+        logs = self.client.get("/api/logs").get_json()
+        self.assertRegex(logs[0]["time"],
+                         r"^\d{4}-\d{2}-\d{2} \d{1,2}:\d{2}:\d{2} (AM|PM)$")
+
+    def test_settings_expose_a_12_hour_echo(self):
+        self.login()
+        self.client.post("/api/settings",
+                         json={"start_time": "13:30", "early_before": 15,
+                               "late_after": 10})
+        s = self.client.get("/api/settings").get_json()
+        self.assertEqual(s["start_time"], "13:30")   # the control stays 24h
+        self.assertEqual(s["start_time_12h"], "1:30 PM")
 
     def test_public_page_has_no_import(self):
         html = self.client.get("/").get_data(as_text=True)
