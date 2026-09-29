@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase;
 
 import com.scangate.app.model.Student;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -52,6 +53,29 @@ public class StudentDao {
         } finally {
             cursor.close();
         }
+    }
+
+    /**
+     * Every student number in the roster, and nothing else.
+     *
+     * Used to correct a printed number the reader got a digit wrong on. The
+     * reader does not know which numbers exist, but the roster does, so the
+     * caller keeps this list and hands it to StudentRosterMatcher. Reading 262
+     * short strings once and holding on to them beats querying per scan.
+     */
+    public List<String> findAllIds() {
+        List<String> ids = new ArrayList<String>();
+        Cursor cursor = database.getReadableDatabase().rawQuery(
+                "SELECT student_id FROM students", null);
+        try {
+            while (cursor.moveToNext()) {
+                String id = cursor.getString(0);
+                if (id != null && !id.trim().isEmpty()) ids.add(id.trim());
+            }
+        } finally {
+            cursor.close();
+        }
+        return ids;
     }
 
     /**

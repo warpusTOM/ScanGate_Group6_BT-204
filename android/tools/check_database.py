@@ -40,6 +40,7 @@ EXPECTED_TABLES = {"students", "scan_logs", "settings"}
 EXPECTED_QUERIES = {
     "SELECT student_id, full_name, course, year_level, section FROM students WHERE student_id = ?",
     "SELECT COUNT(*) FROM students",
+    "SELECT student_id FROM students",
     "SELECT id, student_id, timestamp, status, note FROM scan_logs ORDER BY id DESC LIMIT ?",
     "SELECT COUNT(*) FROM scan_logs WHERE substr(timestamp, 1, 10) = ?",
     "SELECT COUNT(*) FROM scan_logs",
@@ -207,6 +208,8 @@ def run_database_checks() -> None:
                 "FROM students WHERE student_id = ?", (first_id,)).fetchone(),
         "count students":
             connection.execute("SELECT COUNT(*) FROM students").fetchone()[0],
+        "list every student number":
+            connection.execute("SELECT student_id FROM students").fetchall(),
         "recent scans":
             connection.execute(
                 "SELECT id, student_id, timestamp, status, note FROM scan_logs "
@@ -234,6 +237,9 @@ def run_database_checks() -> None:
         problems.append("looking a student up by number returned nothing")
     if results["count students"] != len([r for r in rows if r["student_id"].strip()]):
         problems.append("student count does not match the roster file")
+    if len(results["list every student number"]) != results["count students"]:
+        problems.append("listing every student number returned a different count "
+                        "than counting them")
     if results["scans on a day"] != 3:
         problems.append(f"scans on 2026-09-27 came back as "
                         f"{results['scans on a day']}, expected 3")

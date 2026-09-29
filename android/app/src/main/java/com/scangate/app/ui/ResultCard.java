@@ -38,9 +38,23 @@ public class ResultCard {
 
     /** Shows a student who was found, with the EARLY / ON TIME / LATE note. */
     public void showStudent(Student student, String status) {
+        showStudent(student, status, "");
+    }
+
+    /**
+     * The same, with a line of small print next to the ID number.
+     *
+     * Used when the printed number was read off the card and had to be
+     * corrected against the roster. The operator should be able to see that the
+     * card said something slightly different from what came back, rather than
+     * being told a clean answer that quietly hides a guess.
+     */
+    public void showStudent(Student student, String status, String note) {
         card.setVisibility(View.VISIBLE);
         nameText.setText(student.fullName);
-        idText.setText("ID: " + student.studentId);
+        idText.setText(note == null || note.isEmpty()
+                ? "ID: " + student.studentId
+                : "ID: " + student.studentId + "   " + note);
         sectionText.setText("Section: " + student.sectionLabel());
         applyStatus(status);
     }

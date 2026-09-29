@@ -30,17 +30,12 @@ JDK = Path(r"C:\Program Files\Java\jdk-26.0.1")
 JAVAC = JDK / "bin" / "javac.exe"
 JAVA = JDK / "bin" / "java.exe"
 
-# The classes with no Android in them. Order does not matter to javac.
-PURE_SOURCE_FILES = [
-    "logic/AttendanceStatus.java",
-    "logic/BarcodeDecoder.java",
-    "logic/ClassClock.java",
-    "logic/StudentNumberParser.java",
-    "model/ClassTimeSettings.java",
-    "model/ScanLog.java",
-    "model/Student.java",
-    "data/RosterCsvReader.java",
-]
+# Everything under these folders, plus the one data class, is supposed to be
+# plain Java. Rather than keeping a list that goes stale, the whole folders are
+# collected and every file is checked. Adding a new logic class means it gets
+# tested without anyone remembering to register it.
+PURE_FOLDERS = ["logic", "model"]
+PURE_EXTRA_FILES = ["data/RosterCsvReader.java"]
 
 
 def has_android_import(java_text: str) -> bool:
@@ -52,8 +47,16 @@ def has_android_import(java_text: str) -> bool:
 
 def collect_sources() -> list:
     """Returns the pure sources, refusing anything that has drifted into Android."""
+    relatives = list(PURE_EXTRA_FILES)
+    for folder in PURE_FOLDERS:
+        for path in sorted((PACKAGE_DIR / folder).rglob("*.java")):
+            relatives.append(path.relative_to(PACKAGE_DIR).as_posix())
+
+    if not relatives:
+        raise SystemExit("found no plain-Java sources to test")
+
     sources = []
-    for relative in PURE_SOURCE_FILES:
+    for relative in relatives:
         path = PACKAGE_DIR / relative
         if not path.exists():
             raise SystemExit(f"missing source file: {relative}")

@@ -2,12 +2,12 @@ import com.google.zxing.BarcodeFormat;
 import com.google.zxing.BinaryBitmap;
 import com.google.zxing.DecodeHintType;
 import com.google.zxing.MultiFormatReader;
-import com.google.zxing.PlanarYUVLuminanceSource;
 import com.google.zxing.RGBLuminanceSource;
 import com.google.zxing.Result;
 import com.google.zxing.ResultMetadataType;
 import com.google.zxing.common.HybridBinarizer;
 import com.scangate.app.logic.BarcodeDecoder;
+import com.scangate.app.logic.ocr.PrintedNumberReader;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -19,31 +19,28 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Reads a barcode or QR code out of a picture file.
+ * Reads a card out of a picture file, both ways.
  *
- * This is the same job BarcodeDecoder does on a live camera frame, except the
- * frame is a JPEG on disk instead of a preview buffer. Useful for checking a
- * card without a phone: photograph the ID, run this, see what the code holds.
+ * This is what the phone does, except the frame is a JPEG on disk instead of a
+ * camera buffer. Handy for two things: checking what is actually printed on a
+ * student ID, and measuring the printed number reader against a real card
+ * rather than only the synthetic ones in the test harness.
  *
- * A phone camera gets about thirty tries a second at a moving card. Here we get
- * one still picture, so this tries harder. It runs the image through several
- * preparations and reports every one that reads:
+ * It tries, in order:
  *
- *   direct       the picture as it is
- *   upscale x2   doubled with nearest neighbour, for small or soft codes
- *   upscale x3   tripled, same reason
- *   contrast     histogram stretched to full black and white
- *   contrast x2  contrast stretch then doubled
- *   inverted     dark and light swapped, for a code printed white on black
- *   cropped      trimmed to the code's bounding box, then doubled
+ *   the barcode      every format the phone app supports, on the picture as it
+ *                    is and after several preparations
+ *   the printed number   the same reader the phone runs, over the same picture
  *
- * The last one helps most on photos of paper, where the code is a small part of
- * the frame and the rest is desk.
+ * The preparations matter for photographs. A phone photo of a card is soft,
+ * unevenly lit and slightly tilted, which is much worse than a live camera
+ * frame held steady. So the picture is also tried upscaled, contrast stretched,
+ * inverted and cropped down to the ink.
  *
  * Usage:
- *     java -cp "<classes>;<zxing>" DecodeImageBarcode <image> [image...]
+ *     java ReadCardImage <image> [image...]
  */
-public final class DecodeImageBarcode {
+public final class ReadCardImage {
 
     private static final MultiFormatReader READER = new MultiFormatReader();
 
@@ -63,10 +60,6 @@ public final class DecodeImageBarcode {
         formats.add(BarcodeFormat.EAN_8);
         formats.add(BarcodeFormat.UPC_A);
         formats.add(BarcodeFormat.UPC_E);
-        hints(formats);
-    }
-
-    private static void hints(List<BarcodeFormat> formats) {
         HINTS.put(DecodeHintType.POSSIBLE_FORMATS, formats);
         HINTS.put(DecodeHintType.TRY_HARDER, Boolean.TRUE);
         HINTS.put(DecodeHintType.CHARACTER_SET, "UTF-8");
@@ -74,16 +67,15 @@ public final class DecodeImageBarcode {
 
     public static void main(String[] args) throws Exception {
         if (args.length == 0) {
-            System.out.println("usage: DecodeImageBarcode <image> [image...]");
+            System.out.println("usage: ReadCardImage <image> [image...]");
             System.exit(2);
         }
-
         for (String path : args) {
-            decodeFile(new File(path));
+            readFile(new File(path));
         }
     }
 
-    private static void decodeFile(File file) throws Exception {
+    private static void readFile(File file) throws Exception {
         System.out.println("=====================================================");
         System.out.println("file: " + file.getAbsolutePath());
 
@@ -94,71 +86,71 @@ public final class DecodeImageBarcode {
         }
         System.out.println("size: " + image.getWidth() + " x " + image.getHeight());
 
+        System.out.println();
+        System.out.println("barcode");
         Map<String, Result> hits = new LinkedHashMap<String, Result>();
+        tryBarcode(hits, "direct", image);
+        tryBarcode(hits, "upscale x2", scale(image, 2));
+        tryBarcode(hits, "upscale x3", scale(image, 3));
+        tryBarcode(hits, "contrast", stretchContrast(image));
+        tryBarcode(hits, "contrast x2", scale(stretchContrast(image), 2));
+        tryBarcode(hits, "inverted", invert(image));
 
-        tryReading(hits, "direct", image);
-        tryReading(hits, "upscale x2", scale(image, 2));
-        tryReading(hits, "upscale x3", scale(image, 3));
-        tryReading(hits, "contrast", stretchContrast(image));
-        tryReading(hits, "contrast x2", scale(stretchContrast(image), 2));
-
-        tryReading(hits, "inverted", invert(image));
-
-        BufferedImage cropped = cropToCode(image);
+        BufferedImage cropped = cropToInk(image);
         if (cropped != null && cropped != image) {
-            System.out.println("cropped to the code: "
+            System.out.println("  cropped to the ink: "
                     + cropped.getWidth() + " x " + cropped.getHeight());
-            tryReading(hits, "cropped x2", scale(cropped, 2));
-            tryReading(hits, "cropped x3", scale(cropped, 3));
+            tryBarcode(hits, "cropped x2", scale(cropped, 2));
+            tryBarcode(hits, "cropped x3", scale(cropped, 3));
         }
 
-        // Now the same picture through the app's own decoder, to prove the
-        // class that runs on the phone handles this card too.
-        tryAppDecoder(image);
-        tryAppDecoder(scale(image, 2));
-        tryAppDecoder(stretchContrast(image));
+        if (hits.isEmpty()) {
+            System.out.println("  nothing readable");
+        } else {
+            Result first = hits.values().iterator().next();
+            System.out.println("  FORMAT : " + first.getBarcodeFormat());
+            System.out.println("  TEXT   : " + quote(first.getText()));
+            System.out.println("  LENGTH : " + first.getText().length() + " characters");
+            Object ecc = first.getResultMetadata() == null ? null
+                    : first.getResultMetadata().get(ResultMetadataType.ERROR_CORRECTION_LEVEL);
+            if (ecc != null) System.out.println("  ECC    : " + ecc);
+            System.out.println("  read by: " + join(hits.keySet()));
+        }
 
         System.out.println();
-        if (hits.isEmpty()) {
-            System.out.println("RESULT: nothing readable in this picture");
-            return;
+        System.out.println("printed number");
+        List<PrintedNumberReader.Read> reads = new PrintedNumberReader()
+                .read(toLuminance(image), image.getWidth(), image.getHeight());
+        if (reads.isEmpty()) {
+            System.out.println("  nothing readable");
+        } else {
+            for (int i = 0; i < reads.size(); i++) {
+                System.out.println("  " + (i + 1) + ". " + reads.get(i));
+            }
         }
 
-        Result first = hits.values().iterator().next();
-        System.out.println("RESULT: " + first.getBarcodeFormat());
-        System.out.println("TEXT  : " + quote(first.getText()));
-        System.out.println("LENGTH: " + first.getText().length() + " characters");
-        System.out.println("raw bytes: " + toHex(first.getRawBytes()));
-
-        Object ecc = first.getResultMetadata() == null ? null
-                : first.getResultMetadata().get(ResultMetadataType.ERROR_CORRECTION_LEVEL);
-        if (ecc != null) System.out.println("error correction level: " + ecc);
-
-        System.out.println("read by: " + String.join(", ", hits.keySet()));
-
-        // byte segments matter when the payload is not plain text
-        if (first.getResultMetadata() != null) {
-            Object segments = first.getResultMetadata().get(ResultMetadataType.BYTE_SEGMENTS);
-            if (segments instanceof List) {
-                for (Object segment : (List<?>) segments) {
-                    if (segment instanceof byte[]) {
-                        System.out.println("byte segment: " + toHex((byte[]) segment));
-                    }
-                }
-            }
+        // The app's own decoder, to confirm the class that ships handles this
+        // exact picture too.
+        String viaApp = new BarcodeDecoder().decodeBrightnessPlane(
+                toLuminance(image), image.getWidth(), image.getHeight());
+        if (viaApp != null) {
+            System.out.println();
+            System.out.println("app BarcodeDecoder: " + quote(viaApp));
         }
     }
 
-    private static void tryReading(Map<String, Result> hits, String label,
-                                   BufferedImage image) {
+    // ------------------------------------------------------------------
+    // barcode
+    // ------------------------------------------------------------------
+
+    private static void tryBarcode(Map<String, Result> hits, String label, BufferedImage image) {
         try {
             int width = image.getWidth();
             int height = image.getHeight();
             int[] pixels = image.getRGB(0, 0, width, height, null, 0, width);
 
             RGBLuminanceSource source = new RGBLuminanceSource(width, height, pixels);
-            Result result = READER.decode(
-                    new BinaryBitmap(new HybridBinarizer(source)), HINTS);
+            Result result = READER.decode(new BinaryBitmap(new HybridBinarizer(source)), HINTS);
             if (result != null) {
                 hits.put(label, result);
                 System.out.println("  " + label + ": READ (" + result.getBarcodeFormat() + ")");
@@ -168,44 +160,9 @@ public final class DecodeImageBarcode {
         }
     }
 
-    private static void tryAppDecoder(BufferedImage image) {
-        BufferedImage gray = toGrayscale(image);
-        int width = gray.getWidth();
-        int height = gray.getHeight();
-        byte[] yPlane = new byte[width * height];
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                yPlane[y * width + x] = (byte) (gray.getRGB(x, y) & 0xFF);
-            }
-        }
-        BarcodeDecoder decoder = new BarcodeDecoder();
-        String text = decoder.decodeBrightnessPlane(yPlane, width, height);
-        if (text != null) {
-            System.out.println("  app BarcodeDecoder: READ -> " + quote(text));
-        }
-    }
-
     // ------------------------------------------------------------------
     // image helpers
     // ------------------------------------------------------------------
-
-    private static int[] toPixels(BufferedImage image) {
-        return image.getRGB(0, 0, image.getWidth(), image.getHeight(),
-                null, 0, image.getWidth());
-    }
-
-    /** Swaps dark and light, for a code printed white on black. */
-    private static BufferedImage invert(BufferedImage image) {
-        int width = image.getWidth();
-        int height = image.getHeight();
-        BufferedImage out = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                out.setRGB(x, y, ~image.getRGB(x, y) & 0xFFFFFF);
-            }
-        }
-        return out;
-    }
 
     private static BufferedImage scale(BufferedImage image, int factor) {
         int width = image.getWidth() * factor;
@@ -222,9 +179,9 @@ public final class DecodeImageBarcode {
     private static BufferedImage toGrayscale(BufferedImage image) {
         BufferedImage out = new BufferedImage(
                 image.getWidth(), image.getHeight(), BufferedImage.TYPE_BYTE_GRAY);
-        java.awt.Graphics2D g = out.createGraphics();
-        g.drawImage(image, 0, 0, null);
-        g.dispose();
+        java.awt.Graphics2D graphics = out.createGraphics();
+        graphics.drawImage(image, 0, 0, null);
+        graphics.dispose();
         return out;
     }
 
@@ -257,8 +214,20 @@ public final class DecodeImageBarcode {
         return out;
     }
 
-    /** Trims the picture down to the dark ink, which is where the code is. */
-    private static BufferedImage cropToCode(BufferedImage image) {
+    private static BufferedImage invert(BufferedImage image) {
+        int width = image.getWidth();
+        int height = image.getHeight();
+        BufferedImage out = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                out.setRGB(x, y, ~image.getRGB(x, y) & 0xFFFFFF);
+            }
+        }
+        return out;
+    }
+
+    /** Trims the picture down to the dark ink, which is where the printing is. */
+    private static BufferedImage cropToInk(BufferedImage image) {
         BufferedImage gray = toGrayscale(image);
         int width = gray.getWidth();
         int height = gray.getHeight();
@@ -297,9 +266,32 @@ public final class DecodeImageBarcode {
         return image.getSubimage(minX, minY, maxX - minX + 1, maxY - minY + 1);
     }
 
+    private static byte[] toLuminance(BufferedImage image) {
+        byte[] out = new byte[image.getWidth() * image.getHeight()];
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                int rgb = image.getRGB(x, y);
+                int r = (rgb >> 16) & 0xFF;
+                int g = (rgb >> 8) & 0xFF;
+                int b = rgb & 0xFF;
+                out[y * image.getWidth() + x] = (byte) ((r * 299 + g * 587 + b * 114) / 1000);
+            }
+        }
+        return out;
+    }
+
     // ------------------------------------------------------------------
     // printing helpers
     // ------------------------------------------------------------------
+
+    private static String join(java.util.Collection<String> parts) {
+        StringBuilder out = new StringBuilder();
+        for (String part : parts) {
+            if (out.length() > 0) out.append(", ");
+            out.append(part);
+        }
+        return out.toString();
+    }
 
     private static String quote(String text) {
         if (text == null) return "null";
@@ -315,16 +307,6 @@ public final class DecodeImageBarcode {
         return out.append('"').toString();
     }
 
-    private static String toHex(byte[] bytes) {
-        if (bytes == null) return "(none)";
-        StringBuilder out = new StringBuilder(bytes.length * 3);
-        for (int i = 0; i < bytes.length; i++) {
-            if (i > 0) out.append(' ');
-            out.append(String.format("%02X", bytes[i]));
-        }
-        return out.toString();
-    }
-
-    private DecodeImageBarcode() {
+    private ReadCardImage() {
     }
 }

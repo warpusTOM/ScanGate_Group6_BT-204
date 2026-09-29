@@ -22,12 +22,14 @@ import com.scangate.app.data.StudentDao;
 import com.scangate.app.logic.AttendanceStatus;
 import com.scangate.app.logic.ClassClock;
 import com.scangate.app.logic.StudentNumberParser;
+import com.scangate.app.logic.StudentRosterMatcher;
 import com.scangate.app.model.ClassTimeSettings;
 import com.scangate.app.model.Student;
 import com.scangate.app.ui.ResultCard;
 import com.scangate.app.ui.ScanLogAdapter;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
@@ -65,6 +67,17 @@ public class MainActivity extends Activity {
     /** The class time currently in effect, reloaded every time the screen wakes. */
     private ClassTimeSettings classTime;
 
+    /**
+     * Every student number in the roster, held in memory.
+     *
+     * A printed number read off a card can come back one digit wrong. This list
+     * is what turns that into a corrected answer instead of a wrong one. It is
+     * read once when the screen starts rather than on every scan, because 262
+     * short strings is nothing to hold and a database round trip per scan is
+     * not worth paying.
+     */
+    private List<String> knownNumbers = new ArrayList<String>();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -88,6 +101,7 @@ public class MainActivity extends Activity {
         }
 
         classTime = settingsDao.load();
+        knownNumbers = studentDao.findAllIds();
     }
 
     private void wireViews() {
@@ -169,7 +183,15 @@ public class MainActivity extends Activity {
         if (requestCode != REQUEST_CAMERA_SCAN) return;
         if (resultCode != RESULT_OK || data == null) return;
 
-        handleScannedText(data.getStringExtra(CameraScanActivity.EXTRA_SCANNED_TEXT));
+        String text = data.getStringExtra(CameraScanActivity.EXTRA_SCANNED_TEXT);
+        String source = data.getStringExtra(CameraScanActivity.EXTRA_SCANNED_SOURCE);
+
+        if (CameraScanActivity.SOURCE_PRINTED.equals(source)) {
+            handlePrintedNumber(text,
+                    data.getStringArrayExtra(CameraScanActivity.EXTRA_SCANNED_ALTERNATIVES));
+        } else {
+            handleScannedText(text);
+        }
     }
 
     private void verifyTypedNumber() {
@@ -224,12 +246,70 @@ public class MainActivity extends Activity {
 
     /** A real student: work out the note, save the log row, show the card. */
     private void recordScan(Student student) {
+        recordScan(student, "");
+    }
+
+    private void recordScan(Student student, String note) {
         Calendar now = Calendar.getInstance();
         String status = ClassClock.classify(now, classTime);
         scanLogDao.insert(student.studentId, ClassClock.storageStamp(now), status, "");
 
-        resultCard.showStudent(student, status);
+        resultCard.showStudent(student, status, note);
         refreshScreen();
+    }
+
+    // ------------------------------------------------------------------
+    // the printed number path
+    // ------------------------------------------------------------------
+
+    /**
+     * A number read off the card as characters, rather than out of a barcode.
+     *
+     * The reader is good but not perfect, so this runs in two passes.
+     *
+     * First it tries every candidate exactly as read. A clean read lands here
+     * and costs nothing.
+     *
+     * Then it falls back to the roster. Since the app knows all 262 valid
+     * student numbers, a single misread digit can still be resolved: the wrong
+     * reading is far closer to the right number than to any other one. The
+     * matcher refuses when the answer is not clear, so this can never pick
+     * between two students, and when it does correct something the card says so
+     * instead of hiding the guess.
+     */
+    private void handlePrintedNumber(String best, String[] alternatives) {
+        List<String> candidates = new ArrayList<String>();
+        if (best != null && !best.isEmpty()) candidates.add(best);
+        if (alternatives != null) {
+            for (int i = 0; i < alternatives.length; i++) {
+                if (alternatives[i] != null && !alternatives[i].isEmpty()) {
+                    candidates.add(alternatives[i]);
+                }
+            }
+        }
+        if (candidates.isEmpty()) return;
+
+        for (int i = 0; i < candidates.size(); i++) {
+            Student student = studentDao.findById(candidates.get(i));
+            if (student != null) {
+                recordScan(student);
+                return;
+            }
+        }
+
+        for (int i = 0; i < candidates.size(); i++) {
+            StudentRosterMatcher.Match match =
+                    StudentRosterMatcher.match(candidates.get(i), knownNumbers);
+            if (match == null) continue;
+
+            Student student = studentDao.findById(match.studentId);
+            if (student == null) continue;
+
+            recordScan(student, getString(R.string.result_read_as, match.readText));
+            return;
+        }
+
+        showNotRegistered(candidates.get(0));
     }
 
     /** A number that was read fine but is not in the roster. */

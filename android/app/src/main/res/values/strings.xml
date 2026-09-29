@@ -17,19 +17,20 @@
     <string name="stats_placeholder">Loading roster…</string>
 
     <!-- Camera screen -->
-    <string name="camera_hint">Line the barcode up inside the box</string>
+    <string name="camera_hint">Line up the barcode, or the printed number</string>
     <string name="camera_starting">Starting camera…</string>
     <string name="button_torch_on">TURN LIGHT ON</string>
     <string name="button_torch_off">TURN LIGHT OFF</string>
     <string name="button_cancel">CANCEL</string>
     <string name="camera_permission_needed">ScanGate needs the camera to read the ID barcode.</string>
     <string name="camera_failed">The camera did not open. Close other apps using it and try again.</string>
-    <string name="camera_no_barcode">No barcode found yet. Hold the phone about 15 cm from the ID and keep it steady.</string>
+    <string name="camera_nothing_read">Nothing read yet. Move closer, keep the card flat, and hold still.</string>
 
     <!-- Result card -->
     <string name="result_not_registered">NOT REGISTERED</string>
     <string name="result_check_id">CHECK THE ID</string>
     <string name="result_no_such_number">No student with number %1$s</string>
+    <string name="result_read_as">(read as %1$s)</string>
 
     <!-- Shown when the camera read a code fine, but the code holds no
          student number at all. Different problem from a number that is

@@ -33,10 +33,10 @@ android/
     ├── check_database.py      test layer 2
     ├── test_logic_on_jvm.py   test layer 3
     ├── smoke_test_on_device.py  install and launch on a real phone
-    ├── decode_image.py        read a code out of a photo of a card
+    ├── read_card_image.py    read a card out of a photo, both ways
     ├── make_brand_assets.py   cut the school artwork into Android sizes
     ├── make_screen_preview.py draw the home screen without a phone
-    ├── DecodeImageBarcode.java  the code behind decode_image.py
+    ├── ReadCardImage.java    the code behind read_card_image.py
     └── tests/
         └── ScanGateLogicTests.java     the actual test cases
 ```
@@ -71,8 +71,23 @@ barcode decoder testable on a laptop.
 |---|---|
 | `AttendanceStatus.java` | The four status strings. They go into the database, so they match the laptop portal's spelling. |
 | `ClassClock.java` | The time maths. Decides EARLY / ON TIME / LATE, builds the 24-hour timestamp that gets stored, and converts times to 12-hour for display. |
-| `StudentNumberParser.java` | Pulls candidate student numbers out of whatever the barcode said. Handles JSON payloads, URLs with a query string, prefixes, separators, and letter-only codes. |
+| `StudentNumberParser.java` | Pulls candidate student numbers out of whatever a barcode said. Handles JSON payloads, URLs with a query string, prefixes, separators, and letter-only codes. |
+| `StudentRosterMatcher.java` | Corrects a read number against the roster. Accepts a single wrong digit when only one student fits, and refuses when two do. |
 | `BarcodeDecoder.java` | The ZXing wrapper. Takes one camera frame in NV21 form and returns the text inside the barcode, or null. |
+
+### `logic/ocr/`
+
+The printed number reader. Same rule as `logic/`: no Android anywhere, so it can
+be measured on a desktop against pictures instead of guessed at.
+
+| file | what it does |
+|---|---|
+| `GrayImage.java` | Holds one grayscale frame. Adaptive threshold and connected component labelling live here. |
+| `InkBlob.java` | One lump of ink: its box, its pixels, and whether its shape could be a printed character. |
+| `GlyphNormalizer.java` | Squashes a lump into the fixed 12 by 18 grid two glyphs can be compared in, and counts the holes in it. |
+| `GlyphMatcher.java` | Compares two grids, trying nine small shifts so a one cell misalignment does not read as a different digit. |
+| `DigitTemplates.java` | Generated. 100 digit shapes, ten fonts by ten digits. Do not edit by hand. |
+| `PrintedNumberReader.java` | The pipeline. Frame in, candidate numbers out, best first. |
 
 ### `data/`
 
@@ -131,9 +146,12 @@ barcode decoder testable on a laptop.
 | `check_database.py` | Test layer 2. Runs the real SQL against a real SQLite. |
 | `test_logic_on_jvm.py` | Test layer 3. 82 checks, including real barcode round trips. |
 | `tests/ScanGateLogicTests.java` | The test cases themselves. |
+| `test_ocr_on_jvm.py` | Test layer 4. Measures the printed number reader on synthetic cards. |
+| `tests/OcrTestHarness.java` | Draws the synthetic cards and counts the hits. |
+| `MakeDigitTemplates.java` | Regenerates `DigitTemplates.java` from the fonts on this machine. |
 | `smoke_test_on_device.py` | Installs on a plugged-in phone and checks it starts. |
-| `decode_image.py` | Reads a code out of a photo. Answers "what is on this card?". |
-| `DecodeImageBarcode.java` | The wrapper behind `decode_image.py`. |
+| `read_card_image.py` | Reads a card out of a photo, both ways. |
+| `ReadCardImage.java` | The wrapper behind `read_card_image.py`. |
 | `make_brand_assets.py` | Cuts the school seal and banner into the sizes Android wants. |
 | `make_screen_preview.py` | Draws the home screen so the design can be checked without a phone. |
 
@@ -235,14 +253,20 @@ Three layers, each catching something the others cannot.
 |---|---|---|
 | 1. source contract | `tools/check_source.py` | A view looked up on the wrong screen. That compiles fine and then throws a NullPointerException on the phone. |
 | 2. database | `tools/check_database.py` | A misspelled column, a query that only breaks once there is a row, a date filter that silently matches nothing. Runs the real SQL against a real SQLite. |
-| 3. logic on the JVM | `tools/test_logic_on_jvm.py` | The time maths, the number parser, the CSV import, and the barcode decode path. 82 checks. |
+| 3. logic on the JVM | `tools/test_logic_on_jvm.py` | The time maths, the number parser, the roster matcher, the CSV import, and the barcode decode path. 82 checks. |
+| 4. character reading | `tools/test_ocr_on_jvm.py` | Whether the printed number reader actually reads. 46 synthetic cards, counted. |
 
 Layer 3 builds a real Code 128 and a real QR code in memory, paints them into
 the same kind of brightness plane a camera frame produces, and reads them back
 with the app's own decoder. So the scan path is verified without needing a
 phone or an emulator.
 
-`python tools/build_apk.py --test` runs all three before building.
+Layer 4 does the same trick for characters: it draws a student number in a real
+font on card coloured paper, then blurs it, adds sensor noise, lights one side of
+the card and tilts it two degrees, and runs the app's own reader over the result.
+It exits non-zero if exact reads drop below 95%.
+
+`python tools/build_apk.py --test` runs all four before building.
 
 ## Adding a screen or a class
 

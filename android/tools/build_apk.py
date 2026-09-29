@@ -217,12 +217,14 @@ def prepare_build_dirs() -> None:
 def main() -> None:
     if "--test" in sys.argv:
         from test_logic_on_jvm import run_logic_tests
+        from test_ocr_on_jvm import run_ocr_tests
         from check_database import check_database
         from check_source import check_sources
 
         check_sources()
         check_database()
         run_logic_tests()
+        run_ocr_tests()
 
     check_toolchain()
     prepare_build_dirs()

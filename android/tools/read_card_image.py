@@ -1,15 +1,14 @@
-"""Read a barcode or QR code out of a picture file.
+"""Read a card out of a picture file, both ways.
 
-Photograph a student ID, run this, and see exactly what the code on the card
-holds. Useful for checking a card without a phone, and for working out why a
-scan did not find a student.
+Photograph a student ID, run this, and see what the app would see: the barcode
+if there is one, and the printed number read as characters.
 
-It compiles the app's own BarcodeDecoder plus a small command-line wrapper, so
-the code path being tested is the same one that runs on the phone.
+Useful for two things. Working out why a scan did not find a student, and
+checking the printed number reader against a real card rather than only the
+synthetic ones the test harness draws.
 
-    python tools/decode_image.py photo.jpg
-    python tools/decode_image.py "C:/cards/*.jpg"     # shell expands this
-    python tools/decode_image.py a.jpg b.jpg c.jpg
+    python tools/read_card_image.py photo.jpg
+    python tools/read_card_image.py front.jpg back.jpg
 
 Nothing is written anywhere. The picture never leaves this machine.
 """
@@ -20,10 +19,10 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from test_logic_on_jvm import PURE_SOURCE_FILES, PACKAGE_DIR, LIBS_DIR  # noqa: E402
+from test_logic_on_jvm import LIBS_DIR, collect_sources  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-WRAPPER = ROOT / "tools" / "DecodeImageBarcode.java"
+WRAPPER = ROOT / "tools" / "ReadCardImage.java"
 CLASSES = ROOT / "build" / "image-tools-classes"
 
 JDK = Path(r"C:\Program Files\Java\jdk-26.0.1")
@@ -37,7 +36,7 @@ def compile_wrapper() -> str:
         raise SystemExit(f"no jars in {LIBS_DIR} - the decoder needs zxing-core")
     classpath = ";".join(jars)
 
-    sources = [str(PACKAGE_DIR / name) for name in PURE_SOURCE_FILES]
+    sources = collect_sources()
     sources.append(str(WRAPPER))
 
     CLASSES.mkdir(parents=True, exist_ok=True)
@@ -55,7 +54,7 @@ def main() -> None:
     images = sys.argv[1:]
     if not images:
         raise SystemExit("Give me at least one image file:\n"
-                         "  python tools/decode_image.py photo.jpg")
+                         "  python tools/read_card_image.py photo.jpg")
 
     missing = [name for name in images if not Path(name).exists()]
     if missing:
@@ -64,7 +63,7 @@ def main() -> None:
     classpath = compile_wrapper()
     subprocess.run(
         [str(JAVA), "-cp", str(CLASSES) + ";" + classpath,
-         "DecodeImageBarcode"] + images,
+         "ReadCardImage"] + images,
         cwd=str(ROOT))
 
 

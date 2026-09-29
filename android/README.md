@@ -12,14 +12,21 @@ Group 6, BT-204. College of St. Catherine of Quezon City.
 
 ## What it does
 
-Two things, and that's it.
+Three things.
 
-1. **Reads the barcode on a student ID with the camera.** Code 128, Code 39,
-   Code 93, Codabar, ITF, EAN, UPC, QR codes and Data Matrix all work.
-2. **Looks the number up and shows the result.** Name, ID, section, and the
+1. **Reads a barcode with the camera.** Code 128, Code 39, Code 93, Codabar,
+   ITF, EAN, UPC, QR codes and Data Matrix all work.
+2. **Reads the printed number off the card.** No barcode needed. It finds the
+   row of digits, works out each character, and corrects the result against the
+   roster.
+3. **Looks the number up and shows the result.** Name, ID, section, and the
    time note, plus a row in the scan history.
 
-Worn-out barcode? Card with no barcode at all? There's a text box on the home
+The camera tries the barcode and the printed number in turn, a few times a
+second each, and the first one to find something wins. You do not have to tell
+it which to use.
+
+Worn-out card, no barcode, nothing printed? There is a text box on the home
 screen. Type the number, press verify, same result.
 
 ## What the screens look like
@@ -57,21 +64,54 @@ That is the whole payload. It is the same code on every card, it is printed by
 the school for marketing, and it holds no student number, so no scanner can ever
 identify a student from it.
 
-Some cards also carry a Code 128 barcode. That one usually does hold the student
-number, and it is the code this app is built for.
+The real identity is on an RFID chip inside the card. That is what the school's
+own tap reader uses, and it is why tapping a card brings up a name. No phone
+camera can see a chip, so that path is out of reach here.
 
-If a card has neither, use the typing box. That path works regardless.
+What is left is the printing. If the card carries a Code 128 barcode, that
+usually holds the number. If it does not, the app reads the number off the card
+as characters, which is the thing that works on a card with nothing but ink.
 
 To find out what a card actually holds, photograph it and run:
 
 ```
-python tools/decode_image.py photo.jpg
+python tools/read_card_image.py photo.jpg
 ```
 
-It prints the format, the exact text, the length, the raw bytes and the error
-correction level, and it tries the picture several ways (direct, upscaled,
-contrast stretched, cropped to the code) because a phone photo of paper is a lot
+It prints the barcode if there is one, and what the printed number reader makes
+of the rest. The picture is tried several ways (direct, upscaled, contrast
+stretched, inverted, cropped to the ink) because a phone photo of paper is a lot
 worse than a live camera frame.
+
+## Reading the printed number
+
+This is the harder of the two paths, and it is worth being honest about how it
+works and how well.
+
+The reader is four steps. It decides which pixels are ink by comparing each one
+against its own neighbourhood, so a shadow across the card does not matter. It
+groups the ink into separate lumps, one per printed character. It squashes each
+lump into a 12 by 18 grid and finds the closest shape in a library of 100 digit
+shapes. Then it pulls the runs of digits out of the line and throws the rest
+away, so a label like `STUDENT NO.` in front of the number is ignored.
+
+Then the roster does the rest. The app knows all 262 valid student numbers, so a
+single misread digit does not lose the student: the wrong reading is still much
+closer to the right number than to any other one in the roster. If the answer is
+not clear it refuses to guess, and when it does correct something the result
+card says `(read as ...)` so nobody is looking at a hidden guess.
+
+Measured accuracy, from `tools/test_ocr_on_jvm.py`:
+
+```
+46 synthetic cards, real fonts, blur, noise, uneven light, 2 degrees of tilt
+exact reads      97.8%
+student resolved 97.8%
+```
+
+The one case it misses is 30px print under heavy blur and noise with a lamp on
+one side, where the digits come out about twenty pixels tall. On a card held at
+15 cm the digits are more than twice that.
 
 ## Reading a card
 
@@ -159,14 +199,20 @@ More detail, including why there's no Gradle, in [BUILDING.md](BUILDING.md).
 python tools/check_source.py       # catches views looked up on the wrong screen
 python tools/check_database.py     # runs every query against a real SQLite
 python tools/test_logic_on_jvm.py  # 82 checks, including real barcodes
+python tools/test_ocr_on_jvm.py    # measures the printed number reader
 ```
 
-Run the last one at minimum. It builds an actual Code 128 and an actual QR code
+Run the third one at minimum. It builds an actual Code 128 and an actual QR code
 in memory with the ZXing encoder, paints them into the same kind of brightness
 frame a camera produces, and reads them back with the app's own decoder. So the
 scan path is tested for real, not just compiled.
 
-`python tools/build_apk.py --test` runs all three before building.
+The fourth one is the only honest way to check a character reader. It draws 46
+synthetic ID numbers in real fonts, blurs them, adds sensor noise, lights one
+side of the card and tilts it, then runs the reader and counts. It fails the
+build if accuracy drops.
+
+`python tools/build_apk.py --test` runs all four before building.
 
 ## Which files do what
 
@@ -177,18 +223,19 @@ Short version:
 ```
 app/src/main/java/com/scangate/app/
     MainActivity.java          home screen
-    CameraScanActivity.java    camera screen
+    CameraScanActivity.java    camera screen, both reading paths
     camera/                    opening the camera, beeps and buzzes
-    logic/                     the time maths, the number parser, the decoder
+    logic/                     time maths, barcode decoding, roster matching
+    logic/ocr/                 the printed number reader
     data/                      database and roster loading
     model/                     plain data classes
     ui/                        the result card and the history list
 ```
 
-Classes in `logic/` and `model/`, plus `data/RosterCsvReader.java`, have no
-Android imports at all. That's on purpose. It means they compile and run on a
-laptop, which is how the barcode test above works. Add an Android import to one
-of them and the test runner refuses to run and tells you why.
+Everything under `logic/` and `model/`, plus `data/RosterCsvReader.java`, has no
+Android imports at all. That's on purpose. It means all of it compiles and runs
+on a laptop, which is how the barcode and OCR tests above work. Add an Android
+import to one of them and the test runner refuses to run and tells you why.
 
 ## The barcode library
 
