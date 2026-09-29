@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Every piece of text the user can read lives here, not inside the Java.
+  If you want to reword a button or a message, this is the only file to open.
+-->
+<resources>
+    <string name="app_name">ScanGate</string>
+    <string name="app_subtitle">CSCQC Student ID Verification</string>
+
+    <!-- Home screen -->
+    <string name="button_open_camera">SCAN ID WITH CAMERA</string>
+    <string name="button_verify_typed">VERIFY TYPED NUMBER</string>
+    <string name="hint_student_number">Student number (e.g. 20253152)</string>
+    <string name="label_recent_scans">Recent scans</string>
+    <string name="label_class_time">Class time</string>
+    <string name="stats_placeholder">Loading roster…</string>
+
+    <!-- Camera screen -->
+    <string name="camera_hint">Line the barcode up inside the box</string>
+    <string name="camera_starting">Starting camera…</string>
+    <string name="button_torch_on">TURN LIGHT ON</string>
+    <string name="button_torch_off">TURN LIGHT OFF</string>
+    <string name="button_cancel">CANCEL</string>
+    <string name="camera_permission_needed">ScanGate needs the camera to read the ID barcode.</string>
+    <string name="camera_failed">The camera did not open. Close other apps using it and try again.</string>
+    <string name="camera_no_barcode">No barcode found yet. Hold the phone about 15 cm from the ID and keep it steady.</string>
+
+    <!-- Result card -->
+    <string name="result_not_registered">NOT REGISTERED</string>
+    <string name="result_check_id">CHECK THE ID</string>
+    <string name="result_no_such_number">No student with number %1$s</string>
+
+    <!-- Class time dialog -->
+    <string name="dialog_class_time_title">Class start time</string>
+    <string name="dialog_class_time_message">Format HH:MM in 24-hour time, for example 08:00 or 13:30.</string>
+    <string name="dialog_start_time_label">Class starts at</string>
+    <string name="dialog_early_label">Minutes before that count as ON TIME</string>
+    <string name="dialog_late_label">Minutes after that still count as ON TIME</string>
+    <string name="dialog_save">SAVE</string>
+    <string name="dialog_cancel">CANCEL</string>
+    <string name="dialog_bad_time">That is not a valid time. Use HH:MM, like 08:00.</string>
+    <string name="class_time_saved">Class time updated to %1$s.</string>
+</resources>

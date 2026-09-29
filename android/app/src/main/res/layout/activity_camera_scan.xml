@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Screen 2 - the camera.
+
+  A RelativeLayout so the aiming box and the buttons can sit ON TOP of
+  the live preview instead of pushing it around.
+
+  cameraPreview   the live picture from the camera
+  scanFrame       white aiming box, drawn over the preview
+  tvCameraHint    one line of instructions under the box
+  btnTorch        turns the phone light on for dark rooms
+  btnCancel       back to the home screen
+-->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <SurfaceView
+        android:id="@+id/cameraPreview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Centred aiming box. The decoder reads the whole frame, so this is
+         a hint for the operator, not a hard limit. -->
+    <View
+        android:id="@+id/scanFrame"
+        android:layout_width="300dp"
+        android:layout_height="140dp"
+        android:layout_centerInParent="true"
+        android:background="@drawable/scan_frame" />
+
+    <TextView
+        android:id="@+id/tvCameraHint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/scanFrame"
+        android:layout_marginTop="20dp"
+        android:layout_marginLeft="24dp"
+        android:layout_marginRight="24dp"
+        android:gravity="center"
+        android:text="@string/camera_hint"
+        android:textColor="#FFFFFF"
+        android:textSize="15sp" />
+
+    <TextView
+        android:id="@+id/btnTorch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_margin="20dp"
+        android:text="@string/button_torch_on"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="@drawable/bg_button_outline" />
+
+    <TextView
+        android:id="@+id/btnCancelScan"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_margin="20dp"
+        android:text="@string/button_cancel"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="@drawable/bg_button_outline" />
+</RelativeLayout>

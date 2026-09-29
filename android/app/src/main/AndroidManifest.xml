@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ScanGate - student ID scanner for CSCQC.
+
+  This file is the app's ID card. It tells Android the app's name, its
+  version, which screens it has, and what permissions it wants.
+
+  Only two permissions are requested, both small:
+    CAMERA   - to read the barcode printed on the student ID
+    VIBRATE  - to buzz the phone when a scan lands
+
+  There is no INTERNET permission on purpose. Everything (the roster, the
+  scan history) stays on the phone. Nothing is uploaded anywhere.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.scangate.app"
+    android:versionCode="2"
+    android:versionName="2.0.0">
+
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- required="false" means the app still installs on a phone without a
+         camera. The manual typing box on the home screen still works there. -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+
+    <application
+        android:label="@string/app_name"
+        android:icon="@drawable/ic_launcher"
+        android:theme="@android:style/Theme.Material"
+        android:allowBackup="true">
+
+        <!-- Screen 1: home. Type a number or tap the camera button. -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Screen 2: the camera. Locked to portrait so the preview maths
+             stays simple. configChanges stops Android from rebuilding the
+             activity (and dropping the camera) on a small rotation. -->
+        <activity
+            android:name=".CameraScanActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen" />
+    </application>
+</manifest>

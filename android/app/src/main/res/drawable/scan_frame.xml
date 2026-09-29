@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The white aiming box drawn over the camera preview. It is only a
+     guide for the person holding the phone - the decoder actually reads
+     the whole frame, so a barcode slightly outside the box still works. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="12dp" />
+    <solid android:color="#00000000" />
+    <stroke android:width="3dp" android:color="#FFFFFF" />
+</shape>

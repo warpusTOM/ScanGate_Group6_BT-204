@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The palette, in one place. Same greens and greys as the school portal
+  (cscqcph.com) so the phone app and the laptop portal look like one system.
+-->
+<resources>
+    <color name="school_green">#198754</color>
+    <color name="school_green_dark">#146c43</color>
+    <color name="screen_background">#1A2A33</color>
+    <color name="card_white">#FFFFFF</color>
+    <color name="text_dark">#212529</color>
+    <color name="text_muted">#495057</color>
+    <color name="text_on_dark">#B0BEC5</color>
+
+    <!-- one colour per scan result -->
+    <color name="status_on_time">#198754</color>
+    <color name="status_early">#0D6EFD</color>
+    <color name="status_late">#FFC107</color>
+    <color name="status_unknown">#DC3545</color>
+</resources>
