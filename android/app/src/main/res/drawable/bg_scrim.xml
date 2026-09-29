@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The dark wash that sits between the school banner and the text.
+
+     Same idea as the laptop portal, which lays a 55 to 62 percent black
+     gradient over the same picture. Without it the white headings disappear
+     into the bright side of the banner. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:angle="270"
+        android:type="linear"
+        android:startColor="#B3000000"
+        android:endColor="#CC000000" />
+</shape>

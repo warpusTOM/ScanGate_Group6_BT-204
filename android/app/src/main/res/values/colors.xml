@@ -2,15 +2,30 @@
 <!--
   The palette, in one place. Same greens and greys as the school portal
   (cscqcph.com) so the phone app and the laptop portal look like one system.
+
+  school_green_deep and school_gold are sampled straight out of the school
+  seal (static/img/cscqcph.png in the repo root) by tools/make_brand_assets.py.
+  The rest match static/css/portal.css.
 -->
 <resources>
+    <!-- the action green, identical to the portal's buttons -->
     <color name="school_green">#198754</color>
-    <color name="school_green_dark">#146c43</color>
+    <color name="school_green_dark">#146C43</color>
+
+    <!-- sampled from the school seal -->
+    <color name="school_green_deep">#2F6E3F</color>
+    <color name="school_gold">#F7EA22</color>
+    <color name="school_cream">#EEEDEA</color>
+
     <color name="screen_background">#1A2A33</color>
     <color name="card_white">#FFFFFF</color>
     <color name="text_dark">#212529</color>
     <color name="text_muted">#495057</color>
     <color name="text_on_dark">#B0BEC5</color>
+    <color name="text_pale_green">#C8E6C9</color>
+
+    <!-- behind the adaptive launcher icon, in mipmap-anydpi-v26 -->
+    <color name="launcher_background">#FFFFFF</color>
 
     <!-- one colour per scan result -->
     <color name="status_on_time">#198754</color>

@@ -55,6 +55,24 @@ public class ResultCard {
         chipColor(R.color.status_unknown, android.graphics.Color.WHITE);
     }
 
+    /**
+     * Shows that the code was read fine but has no student number in it.
+     *
+     * This is a different problem from a number that is simply not on the
+     * roster, and it deserves its own message. Some school IDs carry a QR code
+     * that points at the school's Facebook page, or at a website, with no
+     * number anywhere in it. Telling the operator "check the ID" in that case
+     * sends them looking for a mistake that is not there.
+     */
+    public void showCodeWithoutNumber(String decodedText) {
+        card.setVisibility(View.VISIBLE);
+        nameText.setText(activity.getString(R.string.result_no_number_title));
+        idText.setText(activity.getString(R.string.result_code_says, decodedText));
+        sectionText.setText("");
+        statusChip.setText(R.string.result_no_number_chip);
+        chipColor(R.color.status_unknown, android.graphics.Color.WHITE);
+    }
+
     public void hide() {
         card.setVisibility(View.GONE);
     }

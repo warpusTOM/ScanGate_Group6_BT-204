@@ -30,9 +30,9 @@ PACKAGE_DIR = JAVA_DIR / "com" / "scangate" / "app"
 
 DECLARED_ID = re.compile(r'@\+id/([A-Za-z0-9_]+)')
 REFERENCED_ID = re.compile(r'@id/([A-Za-z0-9_]+)')
-LAYOUT_RESOURCE_REF = re.compile(r'@(string|color|drawable|layout)/([A-Za-z0-9_]+)')
+LAYOUT_RESOURCE_REF = re.compile(r'@(string|color|drawable|mipmap|layout)/([A-Za-z0-9_]+)')
 
-JAVA_RESOURCE_REF = re.compile(r'R\.(id|string|color|drawable|layout)\.([A-Za-z0-9_]+)')
+JAVA_RESOURCE_REF = re.compile(r'R\.(id|string|color|drawable|mipmap|layout)\.([A-Za-z0-9_]+)')
 
 # Screens and helpers that work on views belonging to a layout they never name
 # themselves. ResultCard reaches into activity_main, and ScanLogAdapter builds
@@ -72,13 +72,23 @@ def declared_values() -> dict:
         colors |= set(re.findall(r'<color\s+name="([A-Za-z0-9_]+)"', text))
 
     drawables = {path.stem for path in (RES_DIR / "drawable").glob("*") if path.is_file()}
+    drawables |= {path.stem for path in (RES_DIR / "drawable-nodpi").glob("*") if path.is_file()}
     layouts = {path.stem for path in (RES_DIR / "layout").glob("*.xml")}
+
+    # Launcher icons live in mipmap-* folders, one file per screen density,
+    # plus the adaptive icon XML in mipmap-anydpi-v26.
+    mipmaps: set = set()
+    for folder in RES_DIR.glob("mipmap*"):
+        for path in folder.iterdir():
+            if path.is_file():
+                mipmaps.add(path.stem)
 
     return {
         "string": strings,
         "color": colors,
         "drawable": drawables,
         "layout": layouts,
+        "mipmap": mipmaps,
     }
 
 
@@ -140,7 +150,7 @@ def check_java(values: dict, id_to_layouts: dict) -> list:
     return problems
 
 
-def check_manifest() -> list:
+def check_manifest(values: dict) -> list:
     problems = []
     if not MANIFEST.exists():
         return ["AndroidManifest.xml is missing"]
@@ -155,6 +165,16 @@ def check_manifest() -> list:
         problems.append("AndroidManifest.xml does not ask for the CAMERA permission")
     if 'android.intent.action.MAIN' not in text:
         problems.append("AndroidManifest.xml has no launcher activity")
+
+    # The launcher icon is a mipmap, not a drawable, because it comes in one
+    # file per screen density.
+    for name in re.findall(r'android:(?:icon|roundIcon)="@mipmap/([A-Za-z0-9_]+)"', text):
+        if name not in values["mipmap"]:
+            problems.append(f"AndroidManifest.xml points at @mipmap/{name} "
+                            f"but no mipmap folder has that file")
+
+    if 'android:icon=' not in text:
+        problems.append("AndroidManifest.xml has no launcher icon")
 
     return problems
 
@@ -180,7 +200,7 @@ def check_sources() -> list:
     problems = []
     problems += check_layouts(values)
     problems += check_java(values, id_to_layouts)
-    problems += check_manifest()
+    problems += check_manifest(values)
 
     if problems:
         print("\nsource checks FAILED:")

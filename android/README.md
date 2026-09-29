@@ -34,6 +34,45 @@ left is the light button for dark hallways, bottom right is cancel.
 Aiming is loose on purpose. The decoder reads the whole frame, so a barcode
 hanging a bit outside the box still gets read.
 
+## How it looks
+
+Same as the laptop portal, on purpose. The school banner fills the background
+with a dark wash over it, the CSCQC seal sits in the header, and the buttons are
+the same green the portal uses. Nothing was drawn for this app. The seal and the
+banner are the two images the portal already has, cut into Android sizes by
+`tools/make_brand_assets.py`.
+
+Want to see it without installing anything?
+
+```
+python tools/make_screen_preview.py     # -> dist/home-screen-preview.png
+```
+
+## What is actually on a student ID
+
+Worth knowing before wondering why a scan did not work.
+
+The QR code printed on a CSCQC ID points at `facebook.com/CollegeofStCatherine`.
+That is the whole payload. It is the same code on every card, it is printed by
+the school for marketing, and it holds no student number, so no scanner can ever
+identify a student from it.
+
+Some cards also carry a Code 128 barcode. That one usually does hold the student
+number, and it is the code this app is built for.
+
+If a card has neither, use the typing box. That path works regardless.
+
+To find out what a card actually holds, photograph it and run:
+
+```
+python tools/decode_image.py photo.jpg
+```
+
+It prints the format, the exact text, the length, the raw bytes and the error
+correction level, and it tries the picture several ways (direct, upscaled,
+contrast stretched, cropped to the code) because a phone photo of paper is a lot
+worse than a live camera frame.
+
 ## Reading a card
 
 Hold the phone about 15 cm away, fill the box with the barcode, hold still for
@@ -119,7 +158,7 @@ More detail, including why there's no Gradle, in [BUILDING.md](BUILDING.md).
 ```
 python tools/check_source.py       # catches views looked up on the wrong screen
 python tools/check_database.py     # runs every query against a real SQLite
-python tools/test_logic_on_jvm.py  # 80 checks, including real barcodes
+python tools/test_logic_on_jvm.py  # 82 checks, including real barcodes
 ```
 
 Run the last one at minimum. It builds an actual Code 128 and an actual QR code

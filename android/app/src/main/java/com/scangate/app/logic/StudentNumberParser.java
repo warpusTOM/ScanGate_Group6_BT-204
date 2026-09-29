@@ -80,7 +80,10 @@ public final class StudentNumberParser {
             addCandidate(ordered, seen, keyed.group(2));
         }
 
-        // 2. The whole thing, when it is already just a short code.
+        // 2. The whole thing, when it is already just a short code. This is the
+        //    only place a letters-only code like "ALIMEN" gets picked up, and it
+        //    deliberately refuses anything with a slash or a colon, so a web
+        //    address never comes through as a candidate.
         Matcher plain = PLAIN_CODE.matcher(text);
         if (plain.matches()) {
             addCandidate(ordered, seen, text);
@@ -101,13 +104,10 @@ public final class StudentNumberParser {
             addCandidate(ordered, seen, runs.get(i));
         }
 
-        // 4. Last resort: a short single word with no digits, which is how some
-        //    rows are keyed ("ALIMEN"). A whole name with spaces in it is not a
-        //    student number, so it is deliberately left out.
-        if (ordered.isEmpty() && text.length() <= 30 && text.indexOf(' ') < 0) {
-            addCandidate(ordered, seen, text);
-        }
-
+        // Nothing else to try. A code that is only a web address, like the
+        // school's Facebook page QR, correctly comes back empty here, and the
+        // caller reports "no student number in this code" instead of "not
+        // registered". Those are different problems.
         return ordered;
     }
 

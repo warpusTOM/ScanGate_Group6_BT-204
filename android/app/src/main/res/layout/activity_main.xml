@@ -2,166 +2,226 @@
 <!--
   Screen 1 - the home screen.
 
+  Laid out the same way as the school portal at cscqcph.com: the campus
+  banner fills the background, a dark wash sits over it so text stays
+  readable, and the working parts sit on top in a column.
+
   Reading order top to bottom:
-    title
-    camera button        <- the main way to scan
-    typed-number box     <- fallback when a barcode is scratched or missing
-    result card          <- hidden until something is scanned
-    class time button
+    header               school seal, SCANGATE, school name
+    camera button        the main way to scan
+    typed-number box     fallback when a barcode is scratched or missing
+    result card          hidden until something is scanned
+    class time link
     stats line
     list of recent scans
+
+  The first three children are stacked, not listed: a FrameLayout lets the
+  banner and the dark wash sit behind the column instead of pushing it down.
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
     android:background="@color/screen_background">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/app_name"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:textColor="#FFFFFF" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/app_subtitle"
-        android:textSize="13sp"
-        android:textColor="@color/text_on_dark"
-        android:layout_marginBottom="16dp" />
-
-    <!-- Main action. TextViews are used instead of Buttons for anything
-         with a custom background, because a real Button re-tints its own
-         background on top of the drawable we set. -->
-    <TextView
-        android:id="@+id/btnOpenCamera"
+    <!-- The school's banner. Same picture the laptop portal uses. -->
+    <ImageView
+        android:id="@+id/bgSchoolBanner"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/button_open_camera"
-        android:textColor="#FFFFFF"
-        android:textStyle="bold"
-        android:textSize="16sp"
-        android:gravity="center"
-        android:paddingTop="16dp"
-        android:paddingBottom="16dp"
-        android:clickable="true"
-        android:focusable="true"
-        android:background="@drawable/bg_button_green" />
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/school_banner"
+        android:importantForAccessibility="no" />
 
-    <EditText
-        android:id="@+id/inputStudentNumber"
+    <!-- Dark wash. Without it the white headings vanish into the bright
+         half of the banner. -->
+    <View
+        android:id="@+id/bgScrim"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:hint="@string/hint_student_number"
-        android:textColorHint="#6C757D"
-        android:textColor="@color/text_dark"
-        android:inputType="text"
-        android:singleLine="true"
-        android:imeOptions="actionDone"
-        android:padding="12dp"
-        android:background="@drawable/bg_input" />
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_scrim" />
 
-    <TextView
-        android:id="@+id/btnVerifyTyped"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="@string/button_verify_typed"
-        android:textColor="#CFD8DC"
-        android:textSize="14sp"
-        android:gravity="center"
-        android:paddingTop="12dp"
-        android:paddingBottom="12dp"
-        android:clickable="true"
-        android:focusable="true"
-        android:background="@drawable/bg_button_outline" />
-
-    <!-- Hidden until there is something to show. -->
     <LinearLayout
-        android:id="@+id/resultCard"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical"
-        android:layout_marginTop="16dp"
-        android:padding="16dp"
-        android:background="@drawable/card"
-        android:visibility="gone">
+        android:padding="16dp">
 
-        <TextView
-            android:id="@+id/tvStudentName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:textColor="@color/text_dark" />
-
-        <TextView
-            android:id="@+id/tvStudentId"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textSize="14sp"
-            android:textColor="@color/text_muted" />
-
-        <TextView
-            android:id="@+id/tvStudentSection"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="14sp"
-            android:textColor="@color/text_muted" />
-
-        <TextView
-            android:id="@+id/tvStatus"
+        <!-- Header: the seal, then the name. The portal's top bar does the
+             same thing with the same image. -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:padding="10dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="18dp">
+
+            <ImageView
+                android:id="@+id/schoolLogo"
+                android:layout_width="58dp"
+                android:layout_height="58dp"
+                android:src="@drawable/school_logo"
+                android:importantForAccessibility="no" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginLeft="12dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/headerTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/header_title"
+                    android:textColor="#FFFFFF"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.12" />
+
+                <TextView
+                    android:id="@+id/headerSchool"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/header_school"
+                    android:textColor="@color/text_pale_green"
+                    android:textSize="11sp"
+                    android:lineSpacingExtra="1dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Main action. TextViews are used instead of Buttons for anything
+             with a custom background, because a real Button re-tints its own
+             background on top of the drawable we set. -->
+        <TextView
+            android:id="@+id/btnOpenCamera"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/button_open_camera"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:textSize="16sp"
             android:gravity="center"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:elevation="3dp"
+            android:background="@drawable/bg_button_green" />
+
+        <EditText
+            android:id="@+id/inputStudentNumber"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:hint="@string/hint_student_number"
+            android:textColorHint="#6C757D"
+            android:textColor="@color/text_dark"
+            android:inputType="text"
+            android:singleLine="true"
+            android:imeOptions="actionDone"
+            android:padding="12dp"
+            android:background="@drawable/bg_input" />
+
+        <TextView
+            android:id="@+id/btnVerifyTyped"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/button_verify_typed"
+            android:textColor="#ECEFF1"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="@drawable/bg_button_outline" />
+
+        <!-- Hidden until there is something to show. -->
+        <LinearLayout
+            android:id="@+id/resultCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="16dp"
+            android:padding="16dp"
+            android:background="@drawable/card"
+            android:elevation="6dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tvStudentName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_dark" />
+
+            <TextView
+                android:id="@+id/tvStudentId"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textSize="14sp"
+                android:textColor="@color/text_muted" />
+
+            <TextView
+                android:id="@+id/tvStudentSection"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="14sp"
+                android:textColor="@color/text_muted" />
+
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:padding="10dp"
+                android:gravity="center"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/btnClassTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:text="@string/label_class_time"
+            android:textSize="13sp"
+            android:textColor="#80CBC4"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:paddingRight="10dp"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <TextView
+            android:id="@+id/tvStats"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/stats_placeholder"
+            android:textSize="12sp"
+            android:textColor="@color/text_on_dark" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/label_recent_scans"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF" />
+
+        <ListView
+            android:id="@+id/lvScanLogs"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="6dp"
+            android:divider="#33FFFFFF"
+            android:dividerHeight="1dp" />
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/btnClassTime"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="@string/label_class_time"
-        android:textSize="13sp"
-        android:textColor="#80CBC4"
-        android:paddingTop="6dp"
-        android:paddingBottom="6dp"
-        android:paddingRight="10dp"
-        android:clickable="true"
-        android:focusable="true" />
-
-    <TextView
-        android:id="@+id/tvStats"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/stats_placeholder"
-        android:textSize="12sp"
-        android:textColor="@color/text_on_dark" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:text="@string/label_recent_scans"
-        android:textStyle="bold"
-        android:textColor="#FFFFFF" />
-
-    <ListView
-        android:id="@+id/lvScanLogs"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginTop="6dp"
-        android:divider="#2E4A57"
-        android:dividerHeight="1dp" />
-</LinearLayout>
+</FrameLayout>

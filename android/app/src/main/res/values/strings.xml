@@ -5,7 +5,8 @@
 -->
 <resources>
     <string name="app_name">ScanGate</string>
-    <string name="app_subtitle">CSCQC Student ID Verification</string>
+    <string name="header_title">SCANGATE</string>
+    <string name="header_school">College of St. Catherine\nQuezon City</string>
 
     <!-- Home screen -->
     <string name="button_open_camera">SCAN ID WITH CAMERA</string>
@@ -29,6 +30,13 @@
     <string name="result_not_registered">NOT REGISTERED</string>
     <string name="result_check_id">CHECK THE ID</string>
     <string name="result_no_such_number">No student with number %1$s</string>
+
+    <!-- Shown when the camera read a code fine, but the code holds no
+         student number at all. Different problem from a number that is
+         simply not in the roster. -->
+    <string name="result_no_number_title">NO STUDENT NUMBER</string>
+    <string name="result_no_number_chip">WRONG CODE</string>
+    <string name="result_code_says">This code holds: %1$s</string>
 
     <!-- Class time dialog -->
     <string name="dialog_class_time_title">Class start time</string>

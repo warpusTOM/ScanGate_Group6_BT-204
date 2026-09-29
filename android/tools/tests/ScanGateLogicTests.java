@@ -189,6 +189,15 @@ public final class ScanGateLogicTests {
         check("null gives nothing",
                 StudentNumberParser.candidates(null).isEmpty());
 
+        // The QR code actually printed on a CSCQC student ID. It points at the
+        // school's Facebook page and holds no student number at all, so the app
+        // has to report "no number in this code" rather than "not registered".
+        check("a school facebook QR holds no student number",
+                StudentNumberParser.candidates(
+                        "https://www.facebook.com/CollegeofStCatherine").isEmpty());
+        check("a plain website holds no student number",
+                StudentNumberParser.candidates("https://cscqcph.com").isEmpty());
+
         check("a name is not treated as a student number",
                 StudentNumberParser.candidates("Jhon Lloyd Molino").isEmpty());
 

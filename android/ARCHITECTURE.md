@@ -20,8 +20,10 @@ android/
 │       │   └── students.csv            the roster, 262 students
 │       ├── java/com/scangate/app/      all the code
 │       └── res/
-│           ├── drawable/               backgrounds, buttons, aiming box, icon
+│           ├── drawable/               backgrounds and button shapes
+│           ├── drawable-nodpi/         the seal, the banner, the icon art
 │           ├── layout/                 the four screens and popups
+│           ├── mipmap-*/               the launcher icon, one per density
 │           └── values/
 │               ├── strings.xml         every piece of text the user can read
 │               └── colors.xml          the palette
@@ -30,6 +32,11 @@ android/
     ├── check_source.py        test layer 1
     ├── check_database.py      test layer 2
     ├── test_logic_on_jvm.py   test layer 3
+    ├── smoke_test_on_device.py  install and launch on a real phone
+    ├── decode_image.py        read a code out of a photo of a card
+    ├── make_brand_assets.py   cut the school artwork into Android sizes
+    ├── make_screen_preview.py draw the home screen without a phone
+    ├── DecodeImageBarcode.java  the code behind decode_image.py
     └── tests/
         └── ScanGateLogicTests.java     the actual test cases
 ```
@@ -97,18 +104,51 @@ barcode decoder testable on a laptop.
 
 | file | what it does |
 |---|---|
-| `layout/activity_main.xml` | The home screen. |
+| `layout/activity_main.xml` | The home screen. Banner behind, dark wash, then the column. |
 | `layout/activity_camera_scan.xml` | The camera screen: preview, aiming box, torch, cancel. |
 | `layout/row_scan_log.xml` | One row of the history list. |
 | `layout/dialog_class_time.xml` | The class time popup. |
+| `drawable/bg_scrim.xml` | The dark gradient laid over the banner so text stays readable. |
 | `drawable/scan_frame.xml` | The white aiming box drawn over the preview. |
 | `drawable/bg_button_green.xml` | The main green button. |
 | `drawable/bg_button_outline.xml` | The outline buttons. |
 | `drawable/bg_input.xml` | The white box behind the typing field. |
 | `drawable/card.xml` | The result card background. |
-| `drawable/ic_launcher.png` | The app icon. |
+| `drawable-nodpi/school_logo.png` | The CSCQC seal, for the home screen header. |
+| `drawable-nodpi/school_banner.jpg` | The school banner, shrunk for a phone. |
+| `drawable-nodpi/ic_launcher_foreground.png` | The seal on the adaptive icon canvas. |
+| `mipmap-mdpi` … `mipmap-xxxhdpi` | The launcher icon, one file per screen density. |
+| `mipmap-anydpi-v26/ic_launcher.xml` | The adaptive icon for Android 8 and up. |
 | `values/strings.xml` | All user-facing text. |
 | `values/colors.xml` | All the colours. |
+
+### `tools/`
+
+| file | what it does |
+|---|---|
+| `build_apk.py` | Runs aapt2, javac, d8, zipalign and apksigner. |
+| `check_source.py` | Test layer 1. Catches a view looked up on the wrong screen. |
+| `check_database.py` | Test layer 2. Runs the real SQL against a real SQLite. |
+| `test_logic_on_jvm.py` | Test layer 3. 82 checks, including real barcode round trips. |
+| `tests/ScanGateLogicTests.java` | The test cases themselves. |
+| `smoke_test_on_device.py` | Installs on a plugged-in phone and checks it starts. |
+| `decode_image.py` | Reads a code out of a photo. Answers "what is on this card?". |
+| `DecodeImageBarcode.java` | The wrapper behind `decode_image.py`. |
+| `make_brand_assets.py` | Cuts the school seal and banner into the sizes Android wants. |
+| `make_screen_preview.py` | Draws the home screen so the design can be checked without a phone. |
+
+### Where the branding comes from
+
+Nothing was drawn for this app. `tools/make_brand_assets.py` takes the two
+images the laptop portal already uses, from `../static/img/` in the repo root:
+
+- `cscqcph.png`, the school seal, becomes the launcher icon, the adaptive icon
+  foreground, and the header logo on the home screen.
+- `stcat.png`, the school banner, becomes the home screen background.
+
+It also prints the colours it samples out of the artwork, which is where
+`school_green_deep` and `school_gold` in `colors.xml` came from. Run it again
+if the school changes its logo.
 
 ## How a scan actually flows
 
@@ -195,7 +235,7 @@ Three layers, each catching something the others cannot.
 |---|---|---|
 | 1. source contract | `tools/check_source.py` | A view looked up on the wrong screen. That compiles fine and then throws a NullPointerException on the phone. |
 | 2. database | `tools/check_database.py` | A misspelled column, a query that only breaks once there is a row, a date filter that silently matches nothing. Runs the real SQL against a real SQLite. |
-| 3. logic on the JVM | `tools/test_logic_on_jvm.py` | The time maths, the number parser, the CSV import, and the barcode decode path. 80 checks. |
+| 3. logic on the JVM | `tools/test_logic_on_jvm.py` | The time maths, the number parser, the CSV import, and the barcode decode path. 82 checks. |
 
 Layer 3 builds a real Code 128 and a real QR code in memory, paints them into
 the same kind of brightness plane a camera frame produces, and reads them back

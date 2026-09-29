@@ -196,6 +196,14 @@ public class MainActivity extends Activity {
     private void handleScannedText(String rawText) {
         List<String> candidates = StudentNumberParser.candidates(rawText);
 
+        // Nothing number-shaped in the code at all. That is a different problem
+        // from a number that is not on the roster, so it gets its own card.
+        if (candidates.isEmpty()) {
+            String decoded = shorten(rawText, 48);
+            if (!decoded.isEmpty()) showCodeWithoutNumber(decoded);
+            return;
+        }
+
         for (int i = 0; i < candidates.size(); i++) {
             Student student = studentDao.findById(candidates.get(i));
             if (student != null) {
@@ -204,17 +212,14 @@ public class MainActivity extends Activity {
             }
         }
 
-        // Nothing matched. Show whatever was actually read, so the operator can
-        // see that the scan worked and it is the card that is the problem.
-        String shown = candidates.isEmpty() ? shorten(rawText) : candidates.get(0);
-        if (!shown.isEmpty()) showNotRegistered(shown);
+        showNotRegistered(candidates.get(0));
     }
 
     /** Keeps a long barcode payload from stretching the card off the screen. */
-    private static String shorten(String text) {
+    private static String shorten(String text, int limit) {
         if (text == null) return "";
         String trimmed = text.trim();
-        return trimmed.length() <= 32 ? trimmed : trimmed.substring(0, 32) + "...";
+        return trimmed.length() <= limit ? trimmed : trimmed.substring(0, limit) + "...";
     }
 
     /** A real student: work out the note, save the log row, show the card. */
@@ -230,6 +235,14 @@ public class MainActivity extends Activity {
     /** A number that was read fine but is not in the roster. */
     private void showNotRegistered(String scannedNumber) {
         resultCard.showNotRegistered(scannedNumber);
+        feedback.playNotFound();
+        feedback.vibrate(this, 120L);
+        refreshScreen();
+    }
+
+    /** The camera read a code, but there is no student number inside it. */
+    private void showCodeWithoutNumber(String decodedText) {
+        resultCard.showCodeWithoutNumber(decodedText);
         feedback.playNotFound();
         feedback.vibrate(this, 120L);
         refreshScreen();
