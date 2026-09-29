@@ -130,6 +130,34 @@ public final class OcrTestHarness {
             runLabelledCase(knownNumbers, fontName, 44, 1.2f, 10);
         }
 
+        // The shape of frame the phone actually hands over.
+        //
+        // android.hardware.Camera gives a landscape buffer, because that is how
+        // the sensor is mounted. A card held upright in front of a phone in
+        // portrait therefore arrives SIDEWAYS in the buffer. Every case above
+        // this line has the text upright, which is not what the app gets.
+        System.out.println();
+        System.out.println("camera frames (1280x720 buffer, card sideways)");
+        System.out.println("------------------------------------------------------------");
+        for (String fontName : new String[]{"arial", "tahoma", "verdana", "consola"}) {
+            runCameraFrameCase(knownNumbers, fontName, 46, false, 0f, 0, false);
+            runCameraFrameCase(knownNumbers, fontName, 46, true, 0f, 0, false);
+            runCameraFrameCase(knownNumbers, fontName, 46, true, 1.0f, 8, true);
+            runCameraFrameCase(knownNumbers, fontName, 30, true, 1.0f, 8, true);
+        }
+
+        // Student numbers on cards are often printed with wide letter spacing,
+        // which is the thing that breaks line grouping if the gap allowance is
+        // set too tight. Worth its own cases.
+        System.out.println();
+        System.out.println("camera frames, wide letter spacing");
+        System.out.println("------------------------------------------------------------");
+        for (String fontName : new String[]{"arial", "tahoma", "verdana"}) {
+            runTrackedCase(knownNumbers, fontName, 46, true, 0f, 0);
+            runTrackedCase(knownNumbers, fontName, 46, true, 1.0f, 8);
+            runTrackedCase(knownNumbers, fontName, 34, true, 1.0f, 8);
+        }
+
         System.out.println("------------------------------------------------------------");
         System.out.printf("cases            %d%n", cases);
         System.out.printf("exact reads      %d/%d  (%.1f%%)%n",
@@ -194,6 +222,113 @@ public final class OcrTestHarness {
         if (gradient) out.append(" lamp");
         if (tilt) out.append(" tilt");
         return out.toString();
+    }
+
+    /**
+     * A case drawn the way a camera frame really arrives.
+     *
+     * The number is drawn into a portrait picture first, which is what a person
+     * holding the phone would see, and then turned a quarter turn to produce
+     * the landscape buffer the sensor actually hands over. With sideways false
+     * the picture is left as the person sees it, which makes a control: if the
+     * upright version reads and the sideways one does not, the reader only
+     * works in one orientation and the app will never work in the hand.
+     */
+    private static void runCameraFrameCase(List<String> knownNumbers, String fontName,
+                                           int size, boolean sideways, float blur,
+                                           int noise, boolean gradient) throws Exception {
+        String truth = numbers[cases % numbers.length];
+        BufferedImage frame = renderCameraFrame(fontName, truth, size, sideways,
+                blur, noise, gradient, 0f);
+
+        String name = fontName + " " + size + "px " + (sideways ? "sideways" : "upright");
+        if (blur > 0) name += " blur" + blur;
+        if (noise > 0) name += " noise" + noise;
+        if (gradient) name += " lamp";
+        evaluate(knownNumbers, name, truth, frame);
+    }
+
+    /** The same, with the digits spread out the way a card often prints them. */
+    private static void runTrackedCase(List<String> knownNumbers, String fontName,
+                                       int size, boolean sideways, float blur, int noise)
+            throws Exception {
+        String truth = numbers[cases % numbers.length];
+        BufferedImage frame = renderCameraFrame(fontName, truth, size, sideways,
+                blur, noise, false, 0.35f);
+
+        String name = fontName + " " + size + "px tracked";
+        if (blur > 0) name += " blur" + blur;
+        if (noise > 0) name += " noise" + noise;
+        evaluate(knownNumbers, name, truth, frame);
+    }
+
+    private static BufferedImage renderCameraFrame(String fontName, String number, int size,
+                                                   boolean sideways, float blur, int noise,
+                                                   boolean gradient, float tracking)
+            throws Exception {
+        int portraitWidth = 720;
+        int portraitHeight = 1280;
+
+        BufferedImage portrait = new BufferedImage(
+                portraitWidth, portraitHeight, BufferedImage.TYPE_INT_RGB);
+        Graphics2D graphics = portrait.createGraphics();
+        graphics.setColor(new Color(232, 231, 226));
+        graphics.fillRect(0, 0, portraitWidth, portraitHeight);
+
+        Font font = loadFont(fontName, size);
+        graphics.setFont(font);
+        graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+                RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+        java.awt.FontMetrics metrics = graphics.getFontMetrics();
+        int baseline = portraitHeight / 2 + metrics.getAscent() / 2;
+        graphics.setColor(new Color(28, 30, 34));
+
+        if (tracking <= 0) {
+            int textWidth = metrics.stringWidth(number);
+            graphics.drawString(number, (portraitWidth - textWidth) / 2, baseline);
+        } else {
+            int extra = Math.round(size * tracking);
+            int totalWidth = 0;
+            for (int i = 0; i < number.length(); i++) {
+                totalWidth += metrics.charWidth(number.charAt(i)) + extra;
+            }
+            totalWidth -= extra;
+
+            int x = (portraitWidth - totalWidth) / 2;
+            for (int i = 0; i < number.length(); i++) {
+                char c = number.charAt(i);
+                graphics.drawString(String.valueOf(c), x, baseline);
+                x += metrics.charWidth(c) + extra;
+            }
+        }
+        graphics.dispose();
+
+        BufferedImage frame = sideways ? rotateQuarterTurn(portrait) : portrait;
+        if (gradient) frame = applyLamp(frame);
+        if (blur > 0) frame = boxBlur(frame, Math.round(blur));
+        if (noise > 0) frame = addNoise(frame, noise, 7717 + cases);
+        return frame;
+    }
+
+    /**
+     * Turns a portrait picture into the landscape buffer the camera hands over.
+     *
+     * The sensor is mounted a quarter turn from the way the phone is held, so
+     * the buffer is always landscape and the scene inside it is always on its
+     * side. This is the inverse of the rotation the app has to apply before it
+     * can read anything.
+     */
+    private static BufferedImage rotateQuarterTurn(BufferedImage source) {
+        int width = source.getWidth();
+        int height = source.getHeight();
+        BufferedImage out = new BufferedImage(height, width, BufferedImage.TYPE_INT_RGB);
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                out.setRGB(y, width - 1 - x, source.getRGB(x, y));
+            }
+        }
+        return out;
     }
 
     private static void evaluate(List<String> knownNumbers, String caseName,

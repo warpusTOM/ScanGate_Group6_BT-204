@@ -63,7 +63,15 @@ public class CameraScanActivity extends Activity
     public static final String SOURCE_PRINTED = "printed";
 
     private static final int REQUEST_CAMERA_PERMISSION = 101;
-    private static final long MILLISECONDS_BETWEEN_DECODES = 180L;
+
+    /**
+     * The shortest gap between handing work to the reader thread.
+     *
+     * The real limit is how long a read takes, not this number, because only
+     * one runs at a time. This is here to stop a burst of frames queueing up
+     * behind each other on a fast phone.
+     */
+    private static final long MILLISECONDS_BETWEEN_DECODES = 140L;
     private static final long HINT_AFTER_QUIET_MILLISECONDS = 8000L;
 
     /** How many unsure readings to pass on besides the best one. */

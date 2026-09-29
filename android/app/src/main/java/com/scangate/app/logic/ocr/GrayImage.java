@@ -82,6 +82,48 @@ public final class GrayImage {
         return pixels;
     }
 
+    /**
+     * Writes a quarter turn of this image into a destination buffer.
+     *
+     * This exists because of how phone cameras are built. The sensor is mounted
+     * a quarter turn from the way the phone is held, so android.hardware.Camera
+     * hands over a landscape buffer no matter which way up the phone is. A card
+     * held upright in front of a phone in portrait therefore arrives sideways,
+     * and a reader that only looks for rows of characters finds nothing at all.
+     *
+     * A plain transpose would be cheaper but it mirrors the characters as well
+     * as turning them, and a mirrored 2 is not a 2. A quarter turn keeps them
+     * the right way round.
+     *
+     * The destination is a caller supplied buffer rather than a new array
+     * because this runs on frames that found nothing, which is most of them
+     * while somebody is still lining the card up.
+     *
+     * @param destination at least width * height bytes
+     * @param clockwise   true for a quarter turn clockwise
+     */
+    public void quarterTurnInto(byte[] destination, boolean clockwise) {
+        if (destination == null || destination.length < width * height) {
+            throw new IllegalArgumentException("destination buffer is too small");
+        }
+        int turnedWidth = height;
+        for (int y = 0; y < height; y++) {
+            int rowStart = y * width;
+            for (int x = 0; x < width; x++) {
+                int turnedX;
+                int turnedY;
+                if (clockwise) {
+                    turnedX = height - 1 - y;
+                    turnedY = x;
+                } else {
+                    turnedX = y;
+                    turnedY = width - 1 - x;
+                }
+                destination[turnedY * turnedWidth + turnedX] = pixels[rowStart + x];
+            }
+        }
+    }
+
     public int pixelAt(int x, int y) {
         if (x < 0 || y < 0 || x >= width || y >= height) return 0;
         return pixels[y * width + x] & 0xFF;

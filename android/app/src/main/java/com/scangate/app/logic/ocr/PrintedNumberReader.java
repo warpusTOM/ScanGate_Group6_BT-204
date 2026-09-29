@@ -98,6 +98,10 @@ public final class PrintedNumberReader {
 
     private GrayImage image;
 
+    /** Scratch for the turned frames, kept so a quarter turn allocates nothing. */
+    private byte[] turnedPixels;
+    private GrayImage turnedImage;
+
     /**
      * @param luminance one byte per pixel of brightness
      * @param width     frame width
@@ -114,14 +118,18 @@ public final class PrintedNumberReader {
     public List<Read> read(GrayImage frame) {
         this.image = frame;
 
-        // How big a neighbourhood to compare each pixel against depends on how
-        // big the printing is, and that is exactly what we do not know yet. A
-        // window around the height of one character is right for medium print,
-        // but a window the size of one character on a small number sits mostly
-        // inside the strokes and reads them as background. So the reader tries
-        // the normal window, and if nothing at all turns up, tries a smaller one
-        // for fine print and a larger one for coarse print. The extra passes
-        // only happen on frames that would otherwise have found nothing.
+        // Order matters, because most frames find nothing and this runs several
+        // times a second while somebody lines the card up.
+        //
+        // Orientation comes first and the window size second. A camera buffer
+        // is landscape with the card on its side, so the second view is the one
+        // that usually hits, and it hits at the middle window size. Working
+        // through orientations at one window size means the common case is two
+        // passes instead of four.
+        //
+        // The wider window sizes are the fallback for unusually small or large
+        // printing, and they only get tried once every orientation has failed
+        // at the middle size.
         int shortest = Math.min(frame.width(), frame.height());
         int[] radii = {
                 Math.max(MIN_WINDOW_RADIUS, shortest / MEDIUM_WINDOW_DIVISOR),
@@ -129,13 +137,65 @@ public final class PrintedNumberReader {
                 Math.max(MIN_WINDOW_RADIUS, shortest / COARSE_WINDOW_DIVISOR),
         };
 
-        for (int attempt = 0; attempt < radii.length; attempt++) {
-            if (attempt > 0 && radii[attempt] == radii[attempt - 1]) continue;
+        int[] viewOrder = viewOrderFor(frame);
 
-            List<Read> found = readWithWindow(frame, radii[attempt]);
-            if (!found.isEmpty()) return rank(found);
+        for (int radiusIndex = 0; radiusIndex < radii.length; radiusIndex++) {
+            if (radiusIndex > 0 && radii[radiusIndex] == radii[radiusIndex - 1]) continue;
+
+            for (int step = 0; step < VIEWS; step++) {
+                GrayImage frameInThisView = viewOf(frame, viewOrder[step]);
+                List<Read> found = readWithWindow(frameInThisView, radii[radiusIndex]);
+                if (!found.isEmpty()) return rank(found);
+            }
         }
         return new ArrayList<Read>();
+    }
+
+    /** How many ways a frame is looked at: as it is, and turned each way. */
+    private static final int VIEWS = 3;
+
+    /**
+     * Which of the three views to try first.
+     *
+     * A frame wider than it is tall is a camera buffer from a phone held
+     * upright, which is how this app is used almost all of the time, and in
+     * that frame the card is on its side. So the clockwise turn is the one that
+     * usually hits, and putting it first saves a pass on nearly every frame.
+     *
+     * A frame already taller than it is wide is either a buffer from a device
+     * whose sensor is mounted the other way round, or a picture handed in by
+     * the test tools, and both of those are usually already the right way up.
+     */
+    private static int[] viewOrderFor(GrayImage frame) {
+        if (frame.width() > frame.height()) {
+            return new int[]{1, 0, 2};      // clockwise first
+        }
+        return new int[]{0, 1, 2};          // as it is first
+    }
+
+    private GrayImage viewOf(GrayImage frame, int view) {
+        if (view == 0) return frame;
+        return turn(frame, view == 1);
+    }
+
+    /** A quarter turned view of the frame, reusing the same buffers every time. */
+    private GrayImage turn(GrayImage source, boolean clockwise) {
+        int turnedWidth = source.height();
+        int turnedHeight = source.width();
+        int needed = turnedWidth * turnedHeight;
+
+        if (turnedPixels == null || turnedPixels.length < needed) {
+            turnedPixels = new byte[needed];
+        }
+        source.quarterTurnInto(turnedPixels, clockwise);
+
+        if (turnedImage == null || turnedImage.width() != turnedWidth
+                || turnedImage.height() != turnedHeight) {
+            turnedImage = new GrayImage(turnedPixels, turnedWidth, turnedHeight);
+        } else {
+            turnedImage.wrap(turnedPixels);
+        }
+        return turnedImage;
     }
 
     private List<Read> readWithWindow(GrayImage frame, int windowRadius) {

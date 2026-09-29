@@ -333,9 +333,12 @@ public class MainActivity extends Activity {
         int scansToday = scanLogDao.countToday("");
         int lateToday = scanLogDao.countToday(AttendanceStatus.LATE);
 
+        // The version is on screen on purpose. When a build is being passed
+        // around on a phone it is the only reliable way to tell which one is
+        // actually installed.
         statsText.setText(studentCount + " students  |  today: " + scansToday
                 + " scans (" + lateToday + " late)  |  class "
-                + classTime.startTimeText());
+                + classTime.startTimeText() + "  |  v" + BuildConfig.VERSION_NAME);
 
         logAdapter.setLogs(scanLogDao.findRecent(RECENT_SCAN_LIMIT));
     }
