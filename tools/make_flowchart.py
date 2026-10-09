@@ -1,4 +1,4 @@
-"""Draw the ScanGate scan-flow algorithm chart -> docs/flowchart.png
+"""Draw the AttendGate check-in flow algorithm chart -> docs/flowchart.png
 
     python tools/make_flowchart.py
 """
@@ -65,7 +65,7 @@ img = Image.new("RGB", (W, H), "#ffffff")
 d = ImageDraw.Draw(img)
 
 # title
-center_text(d, (0, 18, W, 60), ["ScanGate - Scan & Verify Algorithm"], f_title)
+center_text(d, (0, 18, W, 60), ["AttendGate - Verify and Time-Note Algorithm"], f_title)
 
 cx = W // 2 - 100
 

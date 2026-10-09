@@ -1,5 +1,5 @@
-// Public scan page: verify an id, show the card. Nothing else lives here.
-// Scanner guns act like a keyboard + Enter, so we just listen for Enter.
+// Public verify page: check a student number, show the card. Nothing else
+// lives here. Every input arrives as text, so there is no hardware to talk to.
 
 const scanInput = document.getElementById("scanInput");
 const noteInput = document.getElementById("noteInput");

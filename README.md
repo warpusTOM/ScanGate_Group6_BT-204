@@ -1,20 +1,20 @@
-# ScanGate
+# AttendGate
 
-Student ID scanning and verification portal for CSCQC. Scan or type a
-student number and the system checks the local database, shows the
-student's full name, ID number, and section, marks the scan EARLY,
-ON TIME, or LATE against the class start time, and logs everything.
+Student attendance verification portal for CSCQC. Enter a student number
+and the system checks the local database, shows the student's full name,
+ID number, and section, marks the entry EARLY, ON TIME, or LATE against
+the class start time, and records everything.
 
-Group 6 (BT-204), OOP finals project. Runs fully offline on one laptop.
-No internet needed for anything.
+Group 5 (BT-204), OOP finals project. Runs fully offline on one laptop.
+No internet, and no hardware of any kind. Every input is text.
 
 ## Who sees what
 
-- **Students** get only the verification page (`/`). Type or scan a
-  number, get verified / not registered plus the time note.
+- **Students** get only the verification page (`/`). Type a number, get
+  verified / not registered plus the time note.
   No student list, no logs, no import button.
 - **Admins** log in at `/login` and get the dashboard (`/admin`):
-  CSV import, student list, recent scans, late/on-time counts,
+  CSV import, student list, recent check-ins, late/on-time counts,
   time window settings, and account management.
 
 First run has no accounts, so `/login` redirects to a one-time setup
@@ -25,7 +25,7 @@ PBKDF2 hashes in the local database, never in the code.
 ## How it looks
 
 Same look as the school portal (cscqcph.com): campus photo background,
-white card in the middle, green scan button.
+white card in the middle, green verify button.
 
 ## Run it
 
@@ -39,11 +39,15 @@ python main.py --demo     # load the sample students first
 Or grab the exe from Releases. Double-click, wait a few seconds, the
 portal opens. No Python needed.
 
-## The Android app
+## The Android app (side project, not part of the proposal)
 
-There's a phone version too, in `android/`. Same roster, same time notes, same
-green. The difference is the scanning: it uses the phone camera to read the
-barcode on the ID instead of a USB scanner.
+There is a phone version in `android/`, built separately from the submitted
+system. Same roster, same time notes, same green.
+
+It reads the number with the phone camera, and a camera is hardware. The
+proposal says no hardware, so **the phone app is deliberately outside the
+submitted scope**. The proposal covers the Python portal only. Keep it that way
+in the paper and in the defense.
 
 ```
 cd android
@@ -58,7 +62,7 @@ developer on install. That's normal for a project build.
 
 ## The time notes
 
-Every scan is compared to the class start time (set on the admin page,
+Every check-in is compared to the class start time (set on the admin page,
 default 08:00):
 
 - **EARLY** - more than 15 minutes before start
@@ -124,14 +128,14 @@ Neither is code-signed, so SmartScreen may still ask once:
 │   ├── auth.py           # admin accounts (PBKDF2) + login decorator
 │   ├── importer.py       # CSV import with header aliases
 │   ├── system.py         # IDCheckSystem facade, time classification
-│   ├── web.py            # flask routes: public scan + admin dashboard
-│   └── cli.py            # terminal scanner
+│   ├── web.py            # flask routes: public verify + admin dashboard
+│   └── cli.py            # terminal client
 ├── templates/            # index (public), login, setup, admin
 ├── static/               # css, js, school images
 ├── data/students_sample.csv
 ├── tests/
 ├── tools/                # icon generator + pyinstaller build script
-└── android/              # phone app, camera barcode scanning
+└── android/              # phone app (side project, out of scope)
     ├── app/src/main/     # java, res, assets, manifest
     ├── tools/            # build script + the three test layers
     ├── README.md         # what the phone app is and how to use it

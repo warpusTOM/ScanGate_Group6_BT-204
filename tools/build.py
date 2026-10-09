@@ -1,10 +1,10 @@
-"""Release builds for ScanGate.
+"""Release builds for AttendGate.
 
     python tools/build.py
 
 Makes two variants:
-  dist/ScanGate.exe        onefile, easiest to share
-  dist/ScanGate/           onedir, friendlier to antivirus heuristics
+  dist/AttendGate.exe      onefile, easiest to share
+  dist/AttendGate/         onedir, friendlier to antivirus heuristics
                            (self-extracting onefile bootloaders get flagged more)
 
 UPX is left off on purpose: packed binaries trigger heuristic scans.
@@ -26,7 +26,7 @@ DATA = [
 ]
 COMMON = [
     "--noconfirm", "--clean", "--noupx", "--windowed",
-    "--name", "ScanGate",
+    "--name", "AttendGate",
     "--icon", str(ROOT / "assets" / "icon.ico"),
     "--version-file", str(ROOT / "tools" / "version_info.txt"),
     *DATA,
@@ -60,4 +60,4 @@ def build(mode: str) -> None:
 if __name__ == "__main__":
     build("--onefile")
     build("--onedir")
-    print("\ndone: dist/ScanGate.exe  and  dist/ScanGate/")
+    print("\ndone: dist/AttendGate.exe  and  dist/AttendGate/")

@@ -1,11 +1,11 @@
-"""Convert the school portal's credentials export into ScanGate's CSV.
+"""Convert the school portal's credentials export into AttendGate's CSV.
 
     python tools/convert_credentials.py <input.csv> <output.csv>
 
 The portal export looks like:
     section,student_no,surname,first_name,access_key
 
-ScanGate wants:
+AttendGate wants:
     student_id,full_name,gmail,course,year_level,section
 
 Rules:

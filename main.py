@@ -1,4 +1,4 @@
-"""ScanGate entry point.
+"""AttendGate entry point.
 
     python main.py              portal page (opens in a window or browser)
     python main.py --cli        terminal scanner instead
@@ -30,7 +30,7 @@ except ImportError:
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="scangate",
-        description="ScanGate - student ID scanner and verifier (CSCQC)")
+        description="AttendGate - student attendance verifier (CSCQC)")
     parser.add_argument("--cli", action="store_true")
     parser.add_argument("--demo", action="store_true")
     parser.add_argument("--browser", action="store_true")
@@ -59,7 +59,7 @@ def main() -> None:
 
     if args.browser or not _HAVE_WEBVIEW:
         threading.Timer(1.0, lambda: webbrowser.open(url)).start()
-        print(f"ScanGate running at {url}  (Ctrl+C to stop)")
+        print(f"AttendGate running at {url}  (Ctrl+C to stop)")
         app.run(port=args.port, threaded=True, use_reloader=False)
         return
 
@@ -68,7 +68,7 @@ def main() -> None:
         target=lambda: app.run(port=args.port, threaded=True, use_reloader=False),
         daemon=True,
     ).start()
-    webview.create_window("ScanGate - CSCQC Portal", url, width=1100, height=760)
+    webview.create_window("AttendGate - CSCQC Portal", url, width=1100, height=760)
     webview.start()
 
 

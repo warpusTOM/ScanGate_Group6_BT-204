@@ -13,3 +13,6 @@ dist/
 *.spec
 
 data/_upload_tmp.csv
+
+# Flask session secret, generated on first run. Never commit it.
+data/secret.key

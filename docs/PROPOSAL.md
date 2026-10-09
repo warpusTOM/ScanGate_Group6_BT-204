@@ -2,10 +2,11 @@
 
 ## Title
 
-**ScanGate: A Student ID Scanning and Verification System with
-Automated Time Notes for the College of St. Catherine of Quezon City**
+**AttendGate: A Python-Based Student Attendance Verification System for
+ID Number Validation, Automated Lateness Classification, and Attendance
+Record Monitoring**
 
-Proponents: Group 6 (BT-204)
+Proponents: Group 5 (BT-204)
 Course: Object-Oriented Programming
 Date: September 2026
 
@@ -14,19 +15,24 @@ Date: September 2026
 ## 1. Introduction
 
 At school events and gate checks, staff still verify students by looking
-at the physical ID and writing names in a logbook. It is slow when a
-line forms, the handwriting is hard to read later, and nobody can tell
-at a glance who was late without flipping pages. We want a small system
-where the guard or instructor types or scans the student number and
-right away sees if the ID is valid and whether the student is early,
-on time, or late.
+at the physical ID and writing names in a logbook. It is slow when a line
+forms, the handwriting is hard to read later, and nobody can tell at a
+glance who was late without flipping pages. We want a small system where
+the guard or instructor enters the student number and right away sees if
+the ID is valid and whether the student is early, on time, or late.
 
-ScanGate does this. It reads the student number, checks it against the
+AttendGate does this. It takes the student number, checks it against the
 student list stored in a local database, and shows the student's full
-name, ID number, and section on the spot. Every scan gets a time note
-(EARLY, ON TIME, or LATE) based on the class start time, and the scan is
-saved with the date and time. The whole thing runs offline on one
-laptop. No internet needed at any point.
+name, ID number, and section on the spot. Every check-in gets a time note
+(EARLY, ON TIME, or LATE) based on the class start time, and the entry is
+saved with the date and time. The whole thing runs offline on one laptop.
+No internet needed at any point.
+
+**No hardware is involved.** AttendGate is pure software: Python, Flask
+and SQLite running on one laptop. There is no scanner, no card reader, no
+RFID, no camera, and no microcontroller anywhere in the system. A student
+number is entered as text, or pasted in from any source, and the system
+does the rest.
 
 ## 2. Statement of the Problem
 
@@ -39,18 +45,18 @@ laptop. No internet needed at any point.
 
 ## 3. Objectives
 
-General: build an offline ID scanning and verification system that shows
-OOP in Python.
+General: build an offline student attendance verification system that
+shows OOP in Python, using no hardware of any kind.
 
 Specific:
 
 1. Store the student list in a local SQLite database.
-2. Verify a student number in one step and show the result clearly
+2. Validate a student number in one step and show the result clearly
    (green for registered, red for not registered), with the full name,
    ID number, and section.
-3. Mark every scan EARLY, ON TIME, or LATE against a class start time
+3. Mark every check-in EARLY, ON TIME, or LATE against a class start time
    that admins can change.
-4. Log every scan with date, time, note, and status.
+4. Record every check-in with date, time, note, and status.
 5. Import the student list from a CSV file, even when the column names
    are not exact (example: "Student No", "ID", or "LRN").
 6. Split the system by role: students only get the verification page,
@@ -59,22 +65,23 @@ Specific:
 
 ## 4. Scope and Limitations
 
-In scope: single laptop, local database, CSV import, scan log with time
-notes, admin accounts, portal-style web page that runs on localhost.
+In scope: single laptop, local database, CSV import, check-in log with
+time notes, admin accounts, portal-style web page that runs on localhost.
 
-Out of scope: barcode hardware drivers (any USB scanner works since it
-types like a keyboard), face recognition, SMS or email notices (dropped,
-the project brief is offline), online sync, multi-user accounts beyond
-the admin role.
+Out of scope: any hardware at all. No barcode scanners, no RFID readers,
+no cameras, no microcontrollers, no sensors. The system takes a student
+number as text and nothing else. Also out of scope: face recognition, SMS
+or email notices (dropped, the project brief is offline), online sync,
+and multi-user accounts beyond the admin role.
 
 ## 5. Algorithm
 
-### 5.1 Main scan loop
+### 5.1 Main check-in loop
 
 ```
 1. Start the program and open the database (scangate.db).
-2. Wait for input in the scan box.
-3. Read the student number.
+2. Wait for input in the student number box.
+3. Take the student number.
 4. Look it up in the students table.
 5. If there is no match:
      show "NOT REGISTERED" in red, then go back to step 2.
@@ -84,7 +91,7 @@ the admin role.
           ON TIME  if now is inside [start - 15 min, start + 10 min]
           LATE     if now >  class start + 10 min
      b. show the student card (full name, ID number, section, status).
-7. Save one row in scan_logs (student number, timestamp, note, status).
+7. Save one row in the log table (student number, timestamp, note, status).
 8. Go back to step 2 for the next student.
 ```
 
@@ -115,7 +122,7 @@ the admin role.
             +--------+---------+
                      v
             +------------------+<------------------+
-            |  input / scan ID |                   |
+            | input ID number  |                   |
             +--------+---------+                   |
                      v                             |
                +-----------+     NO     +-----------------------+
@@ -134,7 +141,7 @@ the admin role.
             +-----------+------------+             |
                         v                          |
             +------------------------+             |
-            | save scan log          |             |
+            | save check-in record   |             |
             +-----------+------------+             |
                         v                          |
             +-----------------------------+        |
@@ -149,17 +156,18 @@ Every input hits exactly one path, and every path is decided:
 | Case | What happens |
 |---|---|
 | Blank or whitespace input | Rejected before any lookup (400) |
-| Unknown ID | Red NOT REGISTERED card, nothing is logged |
-| Registered ID | Green card + scan log written, one atomic step |
-| Same student scans twice | Both scans logged on purpose, the admin sees the real history |
+| Unknown ID | Red NOT REGISTERED card, nothing is recorded |
+| Registered ID | Green card + check-in row written, one atomic step |
+| Same student checks in twice | Both recorded on purpose, the admin sees the real history |
 | CSV re-imported | Existing numbers get updated, never duplicated |
 | CSV row with no student number | Falls back to the access key; if both are blank the row is skipped |
 | Any admin URL without login | 302 to /login (pages) or 401 (API) |
 | Setup page after first account exists | Permanently closed, redirects to /login |
 | Password storage | PBKDF2 hash with random salt, never plaintext |
-| No internet | Nothing in the scan path touches the network |
+| No internet | Nothing in the check-in path touches the network |
+| No hardware | Every input is text, so there is nothing to install or plug in |
 
-![Scan flow algorithm](flowchart.png)
+![Check-in flow algorithm](flowchart.png)
 
 ## 6. OOP design
 
@@ -167,7 +175,7 @@ Every input hits exactly one path, and every path is decided:
 |---|---|
 | Encapsulation | `Database` hides every SQL statement; `UserStore` hides password hashing |
 | Inheritance | deliberately shallow: dataclasses (`Student`, `ScanRecord`) carry defaults and self-validation, and the design favors composition over deep class trees, which the code is cleaner for |
-| Polymorphism | the same `IDCheckSystem.scan()` drives the web page, the terminal scanner, and the exe without changes |
+| Polymorphism | the same `IDCheckSystem.check_in()` drives the web page, the terminal client, and the exe without changes |
 | Abstraction | the web routes never touch SQL, they only know the facade's methods |
 | Composition | `IDCheckSystem` is composed of a `Database`; the Flask app is composed of the system plus a `UserStore` |
 | Facade | `IDCheckSystem` is the single entry point for the web app and the terminal version |
@@ -178,15 +186,16 @@ Every input hits exactly one path, and every path is decided:
 - HTML/CSS/JS hand-written to match the school portal look
 - PBKDF2 (hashlib) for admin passwords
 - PyInstaller for the exe, unittest for testing
+- Nothing else. No hardware, no external service, no internet
 
 ## 8. Expected output
 
-1. A portal-style page at 127.0.0.1 where scanning an ID instantly shows
-   verified or not registered, with the student's full name, ID number,
-   section, and an EARLY / ON TIME / LATE note.
-2. An admin dashboard with CSV import, the student list, recent scans,
-   and late/on-time counts for the day.
-3. A recent scans table that updates after every scan.
+1. A portal-style page at 127.0.0.1 where entering a student number
+   instantly shows verified or not registered, with the student's full
+   name, ID number, section, and an EARLY / ON TIME / LATE note.
+2. An admin dashboard with CSV import, the student list, recent
+   check-ins, and late/on-time counts for the day.
+3. A recent check-ins table that updates after every entry.
 4. Admin accounts (first one created on setup, more added anytime).
 5. A portable exe that runs on any Windows laptop without installing
    anything.

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>CSCQC Portal - ScanGate</title>
+<title>CSCQC Portal - AttendGate</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="{{ url_for('static', filename='img/cscqcph.png') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/portal.css') }}">
@@ -25,16 +25,16 @@
   <div class="card">
     <img class="card-logo" src="{{ url_for('static', filename='img/cscqcph.png') }}" alt="logo">
     <h1>Student ID Verification</h1>
-    <p class="sub">Scan the ID barcode or type the student number, then Enter.</p>
+    <p class="sub">Type the student number, then press Enter.</p>
 
     <input id="scanInput" type="text" placeholder="Student number (e.g. 2026-0001)" autocomplete="off" autofocus>
     <input id="noteInput" type="text" placeholder="Note (optional, e.g. Gate A)">
-    <button class="btn-green" id="scanBtn">SCAN / VERIFY</button>
+    <button class="btn-green" id="scanBtn">VERIFY</button>
 
     <div id="result" class="result hidden"></div>
   </div>
 
-  <p class="foot">ScanGate &middot; Group 6 (BT-204) &middot; runs offline, data stays on this machine</p>
+  <p class="foot">AttendGate &middot; Group 5 (BT-204) &middot; runs offline, data stays on this machine</p>
 </main>
 
 <script src="{{ url_for('static', filename='js/portal.js') }}"></script>

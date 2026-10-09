@@ -1,6 +1,6 @@
-"""Global constants for ScanGate."""
+"""Global constants for AttendGate."""
 
-APP_NAME = "ScanGate"
+APP_NAME = "AttendGate"
 DB_PATH = "scangate.db"
 
 # time-window defaults for the scan note (admins can change them on /admin)
