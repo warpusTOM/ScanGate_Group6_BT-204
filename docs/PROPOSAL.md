@@ -2,9 +2,8 @@
 
 ## Title
 
-**AttendGate: A Python-Based Offline Student Attendance Verification
-System for ID Number Validation, Automated Lateness Classification, and
-Attendance Record Monitoring**
+**AttendGate: A Python-Based Offline Student Attendance System for ID
+Validation, Lateness Classification, and Record Monitoring**
 
 Proponents: Group 5 (BT-204)
 Course: Object-Oriented Programming
