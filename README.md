@@ -39,27 +39,6 @@ python main.py --demo     # load the sample students first
 Or grab the exe from Releases. Double-click, wait a few seconds, the
 portal opens. No Python needed.
 
-## The Android app (side project, not part of the proposal)
-
-There is a phone version in `android/`, built separately from the submitted
-system. Same roster, same time notes, same green.
-
-It reads the number with the phone camera, and a camera is hardware. The
-proposal says no hardware, so **the phone app is deliberately outside the
-submitted scope**. The proposal covers the Python portal only. Keep it that way
-in the paper and in the defense.
-
-```
-cd android
-python tools/build_apk.py          # -> android/dist/ScanGate.apk
-```
-
-Read `android/README.md` for how to use it and `android/ARCHITECTURE.md` for a
-map of the source. The roster lives at `android/app/src/main/assets/students.csv`.
-
-The APK is signed with a debug key, so Android will warn about an unknown
-developer on install. That's normal for a project build.
-
 ## The time notes
 
 Every check-in is compared to the class start time (set on the admin page,
@@ -135,10 +114,5 @@ Neither is code-signed, so SmartScreen may still ask once:
 ├── data/students_sample.csv
 ├── tests/
 ├── tools/                # icon generator + pyinstaller build script
-└── android/              # phone app (side project, out of scope)
-    ├── app/src/main/     # java, res, assets, manifest
-    ├── tools/            # build script + the three test layers
-    ├── README.md         # what the phone app is and how to use it
-    ├── BUILDING.md       # the five build steps, explained
-    └── ARCHITECTURE.md   # every file and what it does
+└── android/              # phone app, not part of this system
 ```
