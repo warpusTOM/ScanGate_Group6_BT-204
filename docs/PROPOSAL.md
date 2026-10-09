@@ -175,7 +175,7 @@ Every input hits exactly one path, and every path is decided:
 |---|---|
 | Encapsulation | `Database` hides every SQL statement; `UserStore` hides password hashing |
 | Inheritance | deliberately shallow: dataclasses (`Student`, `ScanRecord`) carry defaults and self-validation, and the design favors composition over deep class trees, which the code is cleaner for |
-| Polymorphism | the same `IDCheckSystem.check_in()` drives the web page, the terminal client, and the exe without changes |
+| Polymorphism | the same `IDCheckSystem.scan()` drives the web page, the terminal client, and the exe without changes |
 | Abstraction | the web routes never touch SQL, they only know the facade's methods |
 | Composition | `IDCheckSystem` is composed of a `Database`; the Flask app is composed of the system plus a `UserStore` |
 | Facade | `IDCheckSystem` is the single entry point for the web app and the terminal version |
